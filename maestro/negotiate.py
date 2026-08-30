@@ -3,7 +3,7 @@
 Drafts are built through the ``LLMProvider`` seam from data/voice.json voice
 notes. Proposed times are always rendered in the REQUESTER'S timezone
 (timezone fairness), with the CEO-local time alongside for the approver.
-Drafts are never auto-sent — every one enters the approval queue.
+Drafts are never auto-sent - every one enters the approval queue.
 """
 from __future__ import annotations
 

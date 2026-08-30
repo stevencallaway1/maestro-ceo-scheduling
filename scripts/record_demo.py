@@ -5,7 +5,7 @@ Chromium at 1280x720 with human-paced delays, and writes demo_backup.webm to
 the repo root. If ffmpeg is on PATH, it also converts the recording to
 demo_backup.mp4 (H.264, widely previewable in Drive/email clients). Run via
 ``make record``. The run mutates demo state (it performs a live override), so
-run ``make reset`` afterwards — ``make record`` does this automatically.
+run ``make reset`` afterwards - ``make record`` does this automatically.
 
 Not needed for ``make run``: the app itself has zero browser/automation deps.
 """
@@ -63,7 +63,7 @@ def run_request(page: Page, request_id: str) -> None:
 def convert_to_mp4() -> None:
     """Convert the webm to H.264 mp4 so it previews in Drive/email clients."""
     if not shutil.which("ffmpeg"):
-        print("ffmpeg not found — skipping mp4 conversion. Convert manually:")
+        print("ffmpeg not found - skipping mp4 conversion. Convert manually:")
         print(f"  ffmpeg -i {VIDEO_OUT.name} -c:v libx264 -pix_fmt yuv420p "
               f"-crf 20 -preset slow -movflags +faststart {MP4_OUT.name}")
         return
@@ -161,7 +161,7 @@ def main() -> None:
     size_mb = VIDEO_OUT.stat().st_size / 1e6
     print(f"Recorded {VIDEO_OUT.name}: {size_mb:.1f} MB, ~{duration:.0f}s of footage.")
     if duration < 60:
-        raise SystemExit("Recording came out under 60 seconds — check pacing.")
+        raise SystemExit("Recording came out under 60 seconds - check pacing.")
     convert_to_mp4()
 
 

@@ -4,7 +4,7 @@ evaluated deterministically against each request + dossier.
 Rules are evaluated in ascending ``priority`` order. The first fired rule with
 a decisive action (accept / decline / delegate / defer / escalate_to_human)
 sets the outcome. Rules with action ``constrain`` never decide; they attach
-slot-selection constraints. Every fired rule — decisive or not — is recorded
+slot-selection constraints. Every fired rule, decisive or not, is recorded
 so the decision rationale can cite exactly which policies applied.
 """
 from __future__ import annotations

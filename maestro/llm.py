@@ -1,6 +1,6 @@
 """LLM provider seam.
 
-The demo runs with ``MockProvider`` — fully deterministic, zero network calls,
+The demo runs with ``MockProvider`` - fully deterministic, zero network calls,
 so nothing can fail live. A production deployment swaps in a real provider
 (e.g. the Claude API) behind the same ``LLMProvider`` protocol without touching
 any pipeline code: agents ask the provider to "render" a named artifact from
@@ -25,7 +25,7 @@ class MockProvider:
 
     ``render`` dispatches to the template registered for the task. Templates
     receive the full structured context and return plain text, which keeps the
-    output stable across runs — critical for a live screen-share demo.
+    output stable across runs - critical for a live screen-share demo.
     """
 
     def __init__(self) -> None:

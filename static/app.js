@@ -1,4 +1,4 @@
-/* Maestro UI — vanilla JS, zero external dependencies. */
+/* Maestro UI - vanilla JS, zero external dependencies. */
 "use strict";
 
 const $ = (sel, el = document) => el.querySelector(sel);
@@ -35,14 +35,14 @@ function toast(msg, bad = false) {
 }
 
 /* =====================================================================
-   Panel 1 — Request Pipeline
+   Panel 1 - Request Pipeline
    ===================================================================== */
 const STAGES = [
   { key: "request", title: "Intake", desc: "Parse the raw request into a structured object" },
   { key: "dossier", title: "Context Dossier", desc: "Who is this to Zeb? No decision without a dossier" },
   { key: "policy", title: "Policy Engine", desc: "Which rules fire, and which one decides" },
   { key: "decision", title: "Decision", desc: "Outcome, slots, and the written rationale" },
-  { key: "draft", title: "Draft", desc: "CEO-voice reply — never auto-sent" },
+  { key: "draft", title: "Draft", desc: "CEO-voice reply - never auto-sent" },
 ];
 
 let selectedRequest = null;
@@ -119,7 +119,7 @@ $("#run-btn").addEventListener("click", async () => {
       stage.classList.remove("running");
       stage.classList.add("done", "open");
     }
-    toast("Pipeline complete — draft queued for approval (see Daily Brief).");
+    toast("Pipeline complete - draft queued for approval (see Daily Brief).");
   } catch (err) {
     toast(`Pipeline error: ${err.message}`, true);
   } finally {
@@ -136,7 +136,7 @@ function fillStage(key, result) {
     status.textContent = `${r.meeting_type} · ${r.requested_duration_minutes} min · urgency ${r.urgency}`;
     body.innerHTML = `
       <dl class="kv">
-        <dt>Requester</dt><dd>${esc(r.requester.name)} — ${esc(r.requester.role)}${r.requester.role.includes(r.requester.org) ? "" : ", " + esc(r.requester.org)}
+        <dt>Requester</dt><dd>${esc(r.requester.name)} - ${esc(r.requester.role)}${r.requester.role.includes(r.requester.org) ? "" : ", " + esc(r.requester.org)}
           <span class="chip ${r.requester.internal ? "good" : "warn"}">${r.requester.internal ? "internal" : "external"}</span></dd>
         <dt>Meeting type</dt><dd><span class="chip accent">${esc(r.meeting_type)}</span></dd>
         <dt>Duration</dt><dd>${r.requested_duration_minutes} minutes</dd>
@@ -223,13 +223,13 @@ function fillStage(key, result) {
           <div><span class="lbl">Subject</span> ${esc(dr.subject)}</div>
         </div>
         <div class="email-body">${esc(dr.body)}</div>
-        <div class="email-foot">✋ Never auto-sent — waiting in the approval queue as <strong>${esc(result.approval_id)}</strong>. Approve or override it on the Daily Brief panel.</div>
+        <div class="email-foot">✋ Never auto-sent - waiting in the approval queue as <strong>${esc(result.approval_id)}</strong>. Approve or override it on the Daily Brief panel.</div>
       </div>`;
   }
 }
 
 /* =====================================================================
-   Panel 2 — Daily Brief
+   Panel 2 - Daily Brief
    ===================================================================== */
 function renderMarkdown(md) {
   const inline = (s) =>
@@ -278,7 +278,7 @@ function renderApprovals(pending) {
         <button class="btn small danger act-override">Override</button>
       </div>
       <div class="override-box hidden">
-        <input type="text" placeholder="One-line reason (required — this trains the trust ladder)" />
+        <input type="text" placeholder="One-line reason (required - this trains the trust ladder)" />
         <button class="btn small danger act-confirm">Confirm</button>
       </div>
     </div>`
@@ -289,7 +289,7 @@ function renderApprovals(pending) {
     const id = card.dataset.id;
     $(".act-approve", card).addEventListener("click", async () => {
       await api(`/api/approvals/${id}/approve`, { method: "POST" });
-      toast("Approved. Recorded in overrides.json — acceptance metrics update on the Trust panel.");
+      toast("Approved. Recorded in overrides.json - acceptance metrics update on the Trust panel.");
       loadBrief();
     });
     $(".act-override", card).addEventListener("click", () => {
@@ -305,11 +305,11 @@ function renderApprovals(pending) {
         body: JSON.stringify({ reason }),
       });
       if (res.demotion) {
-        toast(`Critical miss — automatic demotion: ${res.approval.category} ${res.demotion.from} → ${res.demotion.to}. See Trust panel.`, true);
+        toast(`Critical miss - automatic demotion: ${res.approval.category} ${res.demotion.from} → ${res.demotion.to}. See Trust panel.`, true);
       } else if (res.critical_miss) {
         toast("Override recorded as a critical miss. Trust metrics updated.", true);
       } else {
-        toast("Override recorded — the eval loop learns from this on the Trust panel.");
+        toast("Override recorded - the eval loop learns from this on the Trust panel.");
       }
       loadBrief();
     };
@@ -319,7 +319,7 @@ function renderApprovals(pending) {
 }
 
 /* =====================================================================
-   Panel 3 — Trust & Audit
+   Panel 3 - Trust & Audit
    ===================================================================== */
 const CAT_LABEL = {
   internal_team: "Internal team", exec_1on1: "Exec 1:1s", external_partner: "External partners",
@@ -358,7 +358,7 @@ async function loadTrust() {
         ${hist.length ? `
         <details class="ladder-hist"><summary>Promotion / demotion history (${hist.length})</summary>
           <ul>${hist.map((h) =>
-            `<li class="${h.reason.includes("DEMOTION") ? "demote" : ""}">${esc(h.date)}: ${esc(h.from)} → ${esc(h.to)} — ${esc(h.reason)}</li>`).join("")}</ul>
+            `<li class="${h.reason.includes("DEMOTION") ? "demote" : ""}">${esc(h.date)}: ${esc(h.from)} → ${esc(h.to)} - ${esc(h.reason)}</li>`).join("")}</ul>
         </details>` : ""}
       </div>`;
     })

@@ -24,7 +24,7 @@ def _rationale_template(ctx: dict[str, Any]) -> str:
     deciding = next((r for r in policy.fired_rules if r.decisive), None)
     rule_cite = f'{policy.deciding_rule_id} ("{deciding.plain_english}")' if deciding else "the default policy"
 
-    who = f"{dossier.requester_name} — {dossier.relationship_summary.split('.')[0].strip()}."
+    who = f"{dossier.requester_name} - {dossier.relationship_summary.split('.')[0].strip()}."
     sentences = [who]
 
     if policy.outcome == "escalate_to_human":
@@ -50,7 +50,7 @@ def _rationale_template(ctx: dict[str, Any]) -> str:
             f"Strategic relevance is {dossier.strategic_relevance}/100: {dossier.relevance_justification}"
         )
         sentences.append(
-            f"{rule_cite} applies, so the ask moves to {policy.delegate_to} with a warm redirect — "
+            f"{rule_cite} applies, so the ask moves to {policy.delegate_to} with a warm redirect - "
             "routed, not rejected."
         )
     elif policy.outcome == "defer":
@@ -63,7 +63,7 @@ def _rationale_template(ctx: dict[str, Any]) -> str:
         else:
             sentences.append(
                 f"No policy claims this confidently enough to act, so {rule_cite} sends it to "
-                f"the Chief of Staff with the full dossier attached — relevance sits at "
+                f"the Chief of Staff with the full dossier attached - relevance sits at "
                 f"{dossier.strategic_relevance}/100 and a human should set the precedent."
             )
         if dossier.open_threads:

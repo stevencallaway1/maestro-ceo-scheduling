@@ -2,7 +2,7 @@
 
 Pure functions over data/calendar.json: free-slot search under policy
 constraints, protected-block collision checks, and timezone-fair rendering.
-All times use stdlib ``zoneinfo`` — no network, no third-party tz data.
+All times use stdlib ``zoneinfo`` - no network, no third-party tz data.
 """
 from __future__ import annotations
 
@@ -59,7 +59,7 @@ def in_protected_block(cal: dict[str, Any], start_iso: str, duration_minutes: in
 def _free_gaps(cal: dict[str, Any]) -> list[tuple[datetime, datetime]]:
     """All free intervals within business hours across the loaded week.
 
-    Every event — protected blocks included — counts as busy, so protected
+    Every event, protected blocks included, counts as busy, so protected
     deep-work time is never offered proactively to anyone.
     """
     tz = ZoneInfo(cal["timezone"])

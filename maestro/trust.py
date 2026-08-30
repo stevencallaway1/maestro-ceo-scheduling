@@ -1,8 +1,8 @@
 """Trust Ladder: autonomy is earned, never assumed.
 
 Levels (per category, persisted in data/trust.json):
-  L0  Suggest only — human executes everything
-  L1  Drafts replies + calendar holds — human approves each one
+  L0  Suggest only - human executes everything
+  L1  Drafts replies + calendar holds - human approves each one
   L2  Auto-handles low-stakes INTERNAL moves, logs everything
   L3  Negotiates external scheduling within policy bounds
 
@@ -11,7 +11,7 @@ Promotion gates:
   L1 -> L2: >=98% accuracy at L1 AND zero critical misses in the window
   L2 -> L3: explicit human sign-off per category (never automatic)
 
-Demotion is AUTOMATIC on any critical miss — a decision the human reverses
+Demotion is AUTOMATIC on any critical miss - a decision the human reverses
 on a sensitive category or a VIP requester. Sensitive categories are
 hard-locked to L0 forever by design.
 """
@@ -40,7 +40,7 @@ def promotion_status(category: str, state: dict[str, Any],
     """Compute promotion readiness for one category from eval metrics.
 
     Returns current level, the next level, progress toward it (0-100), and a
-    plain-English reason — the exact text shown on the Trust panel.
+    plain-English reason - the exact text shown on the Trust panel.
     """
     cat = state["categories"].get(category, {"level": "L0", "locked": False})
     level, locked = cat["level"], cat.get("locked", False)
@@ -58,7 +58,7 @@ def promotion_status(category: str, state: dict[str, Any],
     if level == "L2":
         return {"category": category, "level": level, "locked": False, "next_level": "L3",
                 "progress_pct": 100 if rate >= GATE_L1_L2 and misses == 0 and samples >= MIN_SAMPLES else 50,
-                "reason": ("Metrics clear the bar; L3 requires explicit human sign-off — awaiting Zeb."
+                "reason": ("Metrics clear the bar; L3 requires explicit human sign-off - awaiting Zeb."
                            if rate >= GATE_L1_L2 and misses == 0 and samples >= MIN_SAMPLES
                            else "L3 requires sustained accuracy plus explicit human sign-off.")}
 
@@ -107,7 +107,7 @@ def record_critical_miss(category: str, reason: str) -> dict[str, Any] | None:
     entry = {
         "date": datetime.now(timezone.utc).astimezone().date().isoformat(),
         "from": old, "to": new,
-        "reason": f"AUTOMATIC DEMOTION: critical miss — {reason}",
+        "reason": f"AUTOMATIC DEMOTION: critical miss - {reason}",
     }
     cat["level"] = new
     cat.setdefault("history", []).append(entry)

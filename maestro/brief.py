@@ -27,7 +27,7 @@ def _decision_lines(decisions: list[dict[str, Any]]) -> list[str]:
     lines = []
     for d in decisions:
         label = _OUTCOME_LABEL.get(d["outcome"], d["outcome"])
-        lines.append(f"- **{label}** — {d['requester']}: {d['summary']}")
+        lines.append(f"- **{label}** - {d['requester']}: {d['summary']}")
         lines.append(f"  - *Why:* {d['rationale']}")
     return lines
 
@@ -41,7 +41,7 @@ def generate() -> dict[str, Any]:
     findings = optimizer.run(cal)
     report = evals.full_report()
 
-    md: list[str] = ["# Daily Brief — Monday, Aug 31", ""]
+    md: list[str] = ["# Daily Brief - Monday, Aug 31", ""]
 
     md.append("## Decisions today")
     md.extend(_decision_lines(decisions) or ["- No decisions yet today."])
@@ -52,7 +52,7 @@ def generate() -> dict[str, Any]:
     for d in decisions:
         if d["outcome"] == "defer" and ("deep-work" in d["rationale"].lower() or "protected" in d["rationale"].lower()):
             conflicts.append(
-                f"- {d['requester']}'s ask collided with protected time — resolved by "
+                f"- {d['requester']}'s ask collided with protected time - resolved by "
                 f"offering policy-clean alternatives in the same reply."
             )
     for w in findings["cascade_warnings"]:
@@ -75,7 +75,7 @@ def generate() -> dict[str, Any]:
     md.append("## Awaiting your approval")
     if pending:
         for a in pending:
-            md.append(f"- [{a['category']}] {a['summary']} — *{a['requester']}*")
+            md.append(f"- [{a['category']}] {a['summary']} - *{a['requester']}*")
     else:
         md.append("- Queue is clear.")
     md.append("")

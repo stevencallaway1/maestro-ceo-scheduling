@@ -1,7 +1,7 @@
 """Maestro demo server.
 
 FastAPI backend + static single-page UI. Run with ``python app.py`` (or
-``make run``) and open http://localhost:8000 — zero config, zero network
+``make run``) and open http://localhost:8000 - zero config, zero network
 dependencies at runtime.
 """
 from __future__ import annotations
@@ -79,7 +79,7 @@ def _find_approval(approval_id: str) -> tuple[list[dict[str, Any]], dict[str, An
 
 def _record_human_action(entry: dict[str, Any], action: str, reason: str | None,
                          critical: bool) -> None:
-    """Append the human's verdict to overrides.json — the eval flywheel."""
+    """Append the human's verdict to overrides.json - the eval flywheel."""
     overrides = store.load("overrides.json")
     overrides.append({
         "id": f"ov-live-{len(overrides) + 1:03d}",
@@ -122,7 +122,7 @@ def override(approval_id: str, body: OverrideBody) -> dict[str, Any]:
     critical = trust.is_critical_miss(
         entry["category"], bool(entry.get("vip")), entry.get("sensitive_category"), state)
     _record_human_action(entry, "overridden", body.reason, critical=critical)
-    audit.record("human_review", f"OVERRIDDEN: {entry['summary']} — \"{body.reason}\"",
+    audit.record("human_review", f"OVERRIDDEN: {entry['summary']} - \"{body.reason}\"",
                  actor="human", request_id=entry.get("request_id"))
 
     demotion = trust.record_critical_miss(entry["category"], body.reason) if critical else None
@@ -139,6 +139,6 @@ def index() -> FileResponse:
 
 
 if __name__ == "__main__":
-    print("\n  Maestro — AI scheduling for the Office of the CEO")
+    print("\n  Maestro - AI scheduling for the Office of the CEO")
     print("  http://localhost:8000\n")
     uvicorn.run(app, host="127.0.0.1", port=8000, log_level="warning")

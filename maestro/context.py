@@ -1,6 +1,6 @@
 """Context Agent: build the Context Dossier for a request.
 
-The dossier is a first-class artifact — "No decision without a dossier." It is
+The dossier is a first-class artifact - "No decision without a dossier." It is
 assembled from data/people.json (relationship, flags, relevance) and
 data/history.json (interactions, open threads) and rendered in full in the UI
 before any policy or decision output is shown.

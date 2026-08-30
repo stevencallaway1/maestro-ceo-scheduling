@@ -2,7 +2,7 @@
 
 Every stage of the pipeline consumes and produces one of these dataclasses.
 They are all JSON-serializable via ``dataclasses.asdict`` so the UI can render
-each artifact in full — no decision without an inspectable object behind it.
+each artifact in full - no decision without an inspectable object behind it.
 """
 from __future__ import annotations
 

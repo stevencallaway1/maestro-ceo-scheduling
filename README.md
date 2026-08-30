@@ -2,7 +2,7 @@
 
 ## Why it's built this way
 
-A founder-CEO who lives in the details will never delegate to a black box — so
+A founder-CEO who lives in the details will never delegate to a black box, so
 Maestro never asks for trust it hasn't earned. Every decision ships with a full
 context dossier and a written rationale that cites the exact facts and policy
 rules behind it; every action lands in an append-only audit log; nothing is
@@ -13,7 +13,7 @@ The architecture serves that principle: seven small inspectable stages, a
 hand-editable policy file, and an eval loop that turns every human override
 into training signal.
 
-An AI scheduling system for the Office of the CEO — built for a founder-CEO who
+An AI scheduling system for the Office of the CEO, built for a founder-CEO who
 is obsessed with context and slow to delegate trust. Maestro never operates as a
 black box: **every decision ships with an inspectable context dossier and a
 written rationale**, every action lands in an audit log, and autonomy is earned
@@ -31,16 +31,16 @@ make run                          # or: python app.py
 
 Zero config, zero database, **zero network calls at runtime**. All "AI"
 reasoning is simulated deterministically (rule evaluation + templates) behind an
-`LLMProvider` interface, so nothing can fail live — a real model (e.g. the
+`LLMProvider` interface, so nothing can fail live; a real model (e.g. the
 Claude API) can be swapped in later without touching pipeline code.
 
 ## How to demo (5 lines)
 
-1. `make run`, open http://localhost:8000 — Panel 1, click **Dana Whitfield**, hit **Run pipeline**; walk the five stages (intake → dossier → policy → decision → draft, board member accepted inside 48h, times shown in her timezone).
-2. Click **Jordan Ellis**, run it — the sensitive-category lockout banner fires: personnel topics are hard-locked to human review, Maestro builds the dossier and stops.
-3. Click **Grace Okafor**, run it — accepted with Sydney-fair slots (her mornings, Zeb's afternoons).
-4. Switch to **Daily Brief** — rationales on every decision, optimizer patterns ("focus blocks eaten 3x"), then **Override** Grace's draft with any reason: a VIP reversal is a critical miss and auto-demotes external partners L1 → L0 live.
-5. Switch to **Trust & Audit** — the demotion is already on the ladder, metrics moved, and the audit log shows every step you just took. `make reset` restores clean state between rehearsals.
+1. `make run`, open http://localhost:8000. Panel 1: click **Dana Whitfield**, hit **Run pipeline**; walk the five stages (intake → dossier → policy → decision → draft, board member accepted inside 48h, times shown in her timezone).
+2. Click **Jordan Ellis**, run it: the sensitive-category lockout banner fires. Personnel topics are hard-locked to human review; Maestro builds the dossier and stops.
+3. Click **Grace Okafor**, run it: accepted with Sydney-fair slots (her mornings, Zeb's afternoons).
+4. Switch to **Daily Brief**: rationales on every decision, optimizer patterns ("focus blocks eaten 3x"), then **Override** Grace's draft with any reason. A VIP reversal is a critical miss and auto-demotes external partners L1 → L0 live.
+5. Switch to **Trust & Audit**: the demotion is already on the ladder, metrics moved, and the audit log shows every step you just took. `make reset` restores clean state between rehearsals.
 
 ## Architecture
 
@@ -71,27 +71,27 @@ Background / feedback loops:
                   AUTOMATIC on any critical miss; sensitive categories locked L0
 
   llm.py ──────── LLMProvider seam: MockProvider (deterministic templates) now,
-                  real model later — same interface, zero pipeline changes.
+                  real model later, same interface, zero pipeline changes.
 ```
 
 **Frontend**: one static page (`static/`), vanilla HTML/CSS/JS, no build step,
 no CDN. Three panels: Request Pipeline, Daily Brief, Trust & Audit.
 
-**Storage**: human-readable JSON in `/data` — edit anything by hand before the
+**Storage**: human-readable JSON in `/data`: edit anything by hand before the
 demo. `data/seed/` holds pristine snapshots; `make reset` restores them.
 
 ## The trust ladder
 
 | Level | Meaning | Promotion gate |
 |-------|---------|----------------|
-| L0 | Suggest only — human executes everything | — |
+| L0 | Suggest only; human executes everything | - |
 | L1 | Drafts replies + holds; human approves each | ≥95% acceptance over 2 weeks |
 | L2 | Auto-handles low-stakes internal moves, logs all | ≥98% accuracy at L1, zero critical misses |
 | L3 | Negotiates external scheduling within policy | Explicit human sign-off per category |
 
 Demotion is **automatic** on any critical miss (a human reversal on a sensitive
-category or VIP). Sensitive categories — board governance, legal, M&A,
-personnel — are hard-locked to L0 forever by design.
+category or VIP). Sensitive categories (board governance, legal, M&A,
+personnel) are hard-locked to L0 forever by design.
 
 ## Tests
 
@@ -102,7 +102,7 @@ make test    # 33 tests: policy engine + trust ladder / eval loop
 ## Backup demo recording (dev-only)
 
 ```bash
-pip install -r requirements-dev.txt   # playwright — NOT needed for make run
+pip install -r requirements-dev.txt   # playwright - NOT needed for make run
 python -m playwright install chromium # one-time browser download
 make record                           # writes demo_backup.webm (~77s, 1280x720)
 ```
@@ -126,7 +126,7 @@ screen-share fallback.
 2. **Request #5's meeting type.** The recruiter's request classifies as
    `external_partner` at intake (that's what the text looks like); the
    *dossier* carries the `personnel` sensitivity flag, and the lockout rule
-   fires on the dossier — demonstrating why intake alone must never decide.
+   fires on the dossier, demonstrating why intake alone must never decide.
 3. **Protected blocks are never offered proactively to anyone**, including
    board/legal; the board/legal exemption only governs *displacement* (a
    requester-proposed time inside a block).
@@ -138,10 +138,10 @@ screen-share fallback.
 6. **demo "now"** is pinned in `data/calendar.json` (`demo_now`) so slot math
    is deterministic and hand-tunable.
 7. **Escalations produce an internal routing note instead of an external
-   reply** — escalating a journalist or a confidential personnel matter with an
+   reply**: escalating a journalist or a confidential personnel matter with an
    auto-reply would itself be a judgment call the system shouldn't make.
 8. The only `http://` string in the codebase outside localhost is the SVG
-   XML-namespace identifier in the favicon data URI — an identifier, not a
+   XML-namespace identifier in the favicon data URI: an identifier, not a
    request. Verify: `grep -rn "http" --include="*.py" --include="*.js" .`
 
 ## Repo layout

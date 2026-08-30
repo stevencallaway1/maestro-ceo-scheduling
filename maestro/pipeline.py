@@ -2,7 +2,7 @@
 
 Intake -> Context Dossier -> Policy Engine -> Decision -> Draft -> Approval
 queue, with an audit entry per stage. Returns every stage's full artifact so
-the UI can render the whole chain of reasoning — nothing is a black box.
+the UI can render the whole chain of reasoning - nothing is a black box.
 """
 from __future__ import annotations
 
@@ -39,7 +39,7 @@ class Pipeline:
                      f"{request.meeting_type}, {request.requested_duration_minutes} min, urgency {request.urgency}",
                      request_id=request.id)
 
-        # 2. Context dossier — no decision without a dossier.
+        # 2. Context dossier - no decision without a dossier.
         dossier = context.build(request, self.people, self.history)
         audit.record("context", f"Dossier built for {dossier.requester_name} "
                      f"(relevance {dossier.strategic_relevance}/100, VIP={dossier.vip}, "
@@ -70,7 +70,7 @@ class Pipeline:
         # 5. Draft (never auto-sent) -> approval queue
         draft = negotiate.draft(request, dossier, decision, self.voice)
         approval = self._enqueue(request, dossier, decision, draft)
-        audit.record("approval_queue", f"Draft queued for approval ({draft.kind}) — id {approval['id']}",
+        audit.record("approval_queue", f"Draft queued for approval ({draft.kind}) - id {approval['id']}",
                      request_id=request.id)
         self._log_decision(request, dossier, decision)
 
@@ -84,7 +84,7 @@ class Pipeline:
             "derived": derived,
             "banner": {
                 "sensitive_lockout": policy_result.hard_locked,
-                "text": ("Sensitive category detected — this request is hard-locked to human "
+                "text": ("Sensitive category detected - this request is hard-locked to human "
                          "review (L0, permanent). Maestro built the dossier, then stopped.")
                 if policy_result.hard_locked else None,
             },
