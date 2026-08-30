@@ -109,8 +109,10 @@ make record                           # writes demo_backup.webm (~77s, 1280x720)
 
 `make record` drives the full scripted demo (board request, sensitive lockout,
 brief + live override, trust demotion, audit scroll) and resets demo state when
-done. The video file is **excluded from git** (regenerable, binary); keep your
-local copy handy as the screen-share fallback.
+done. If `ffmpeg` is on PATH it also converts the recording to
+`demo_backup.mp4` (H.264, previews in Drive/email clients). The video files are
+**excluded from git** (regenerable, binary); keep your local copy handy as the
+screen-share fallback.
 
 ## Decisions I made (ambiguities resolved)
 

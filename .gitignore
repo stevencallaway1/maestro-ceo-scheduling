@@ -5,5 +5,7 @@ __pycache__/
 .playwright-mcp/
 .video_tmp/
 demo_backup.webm
+demo_backup.mp4
+submission/
 node_modules/
 .DS_Store

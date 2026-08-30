@@ -2,14 +2,16 @@
 
 Launches the Maestro server, drives the scripted demo sequence in a headless
 Chromium at 1280x720 with human-paced delays, and writes demo_backup.webm to
-the repo root. Run via ``make record``. The run mutates demo state (it
-performs a live override), so run ``make reset`` afterwards — ``make record``
-does this automatically.
+the repo root. If ffmpeg is on PATH, it also converts the recording to
+demo_backup.mp4 (H.264, widely previewable in Drive/email clients). Run via
+``make record``. The run mutates demo state (it performs a live override), so
+run ``make reset`` afterwards — ``make record`` does this automatically.
 
 Not needed for ``make run``: the app itself has zero browser/automation deps.
 """
 from __future__ import annotations
 
+import shutil
 import subprocess
 import sys
 import time
@@ -20,6 +22,7 @@ from playwright.sync_api import Page, sync_playwright
 
 ROOT = Path(__file__).resolve().parent.parent
 VIDEO_OUT = ROOT / "demo_backup.webm"
+MP4_OUT = ROOT / "demo_backup.mp4"
 BASE = "http://127.0.0.1:8000"
 SIZE = {"width": 1280, "height": 720}
 
@@ -55,6 +58,22 @@ def run_request(page: Page, request_id: str) -> None:
     pause(2.0)
     page.locator("#run-btn").click()
     page.wait_for_selector("#stage-draft.done", timeout=30000)
+
+
+def convert_to_mp4() -> None:
+    """Convert the webm to H.264 mp4 so it previews in Drive/email clients."""
+    if not shutil.which("ffmpeg"):
+        print("ffmpeg not found — skipping mp4 conversion. Convert manually:")
+        print(f"  ffmpeg -i {VIDEO_OUT.name} -c:v libx264 -pix_fmt yuv420p "
+              f"-crf 20 -preset slow -movflags +faststart {MP4_OUT.name}")
+        return
+    subprocess.run(
+        ["ffmpeg", "-y", "-i", str(VIDEO_OUT), "-c:v", "libx264",
+         "-pix_fmt", "yuv420p", "-crf", "20", "-preset", "slow",
+         "-movflags", "+faststart", str(MP4_OUT)],
+        check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+    )
+    print(f"Converted {MP4_OUT.name}: {MP4_OUT.stat().st_size / 1e6:.1f} MB.")
 
 
 def main() -> None:
@@ -143,6 +162,7 @@ def main() -> None:
     print(f"Recorded {VIDEO_OUT.name}: {size_mb:.1f} MB, ~{duration:.0f}s of footage.")
     if duration < 60:
         raise SystemExit("Recording came out under 60 seconds — check pacing.")
+    convert_to_mp4()
 
 
 if __name__ == "__main__":
