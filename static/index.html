@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Maestro — Office of the CEO</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%234f46e5'/%3E%3Ctext x='16' y='22' font-family='sans-serif' font-size='17' font-weight='700' fill='white' text-anchor='middle'%3EM%3C/text%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">M</span>
+      <div>
+        <h1>Maestro</h1>
+        <p class="tagline">No decision without a dossier.</p>
+      </div>
+    </div>
+    <nav class="tabs" role="tablist">
+      <button class="tab active" data-panel="pipeline">Request Pipeline</button>
+      <button class="tab" data-panel="brief">Daily Brief</button>
+      <button class="tab" data-panel="trust">Trust &amp; Audit</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- Panel 1: Request Pipeline -->
+    <section id="panel-pipeline" class="panel active">
+      <div class="pipeline-grid">
+        <aside class="inbox">
+          <div class="inbox-head">
+            <h2>Incoming requests</h2>
+            <span class="muted" id="inbox-count"></span>
+          </div>
+          <div id="inbox-list"></div>
+        </aside>
+        <div class="flow">
+          <div class="flow-head">
+            <div>
+              <h2 id="flow-title">Select a request</h2>
+              <p class="muted" id="flow-sub">Pick an item from the inbox, then run it through the pipeline.</p>
+            </div>
+            <div class="flow-controls">
+              <label class="toggle"><input type="checkbox" id="instant-toggle" /><span>Instant</span></label>
+              <button class="btn primary" id="run-btn" disabled>Run pipeline</button>
+            </div>
+          </div>
+          <div id="lockout-banner" class="lockout hidden"></div>
+          <div id="stages"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Panel 2: Daily Brief -->
+    <section id="panel-brief" class="panel">
+      <div class="brief-grid">
+        <article class="card brief-doc">
+          <div id="brief-md" class="markdown">Loading…</div>
+        </article>
+        <aside class="brief-side">
+          <div class="card">
+            <h3>Approval queue</h3>
+            <p class="muted small">Nothing Maestro drafts is ever sent without a human. Approve or override — overrides feed the eval loop.</p>
+            <div id="approval-list"></div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- Panel 3: Trust & Audit -->
+    <section id="panel-trust" class="panel">
+      <div class="trust-grid">
+        <div class="trust-main">
+          <div class="stat-row" id="stat-row"></div>
+          <div class="card">
+            <h3>Trust ladder <span class="muted small">autonomy is earned, never assumed</span></h3>
+            <div id="ladder"></div>
+          </div>
+          <div class="card">
+            <h3>Recent human verdicts <span class="muted small">rolling eval window</span></h3>
+            <div id="override-feed"></div>
+          </div>
+        </div>
+        <aside class="card audit-panel">
+          <h3>Audit log <span class="muted small">every action, timestamped</span></h3>
+          <div id="audit-feed"></div>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast hidden"></div>
+  <script src="/static/app.js"></script>
+</body>
+</html>

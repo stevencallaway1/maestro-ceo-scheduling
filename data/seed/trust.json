@@ -1,0 +1,61 @@
+{
+  "description": "Maestro trust ladder state. Levels: L0 suggest-only, L1 drafts + holds with per-item approval, L2 auto-handles low-stakes internal moves, L3 negotiates external scheduling within policy. Sensitive categories are hard-locked to L0 by design and can never be promoted.",
+  "sensitive_topics_locked": ["board_governance", "legal", "m_and_a", "personnel"],
+  "categories": {
+    "internal_team": {
+      "level": "L2",
+      "locked": false,
+      "history": [
+        {"date": "2026-08-10", "from": "L0", "to": "L1", "reason": "97% suggestion acceptance over first 2 weeks of operation"},
+        {"date": "2026-08-24", "from": "L1", "to": "L2", "reason": "98.5% accuracy at L1, zero critical misses; promoted per ladder policy"}
+      ]
+    },
+    "exec_1on1": {
+      "level": "L1",
+      "locked": false,
+      "history": [
+        {"date": "2026-08-12", "from": "L0", "to": "L1", "reason": "96% suggestion acceptance over 2 weeks"}
+      ]
+    },
+    "external_partner": {
+      "level": "L1",
+      "locked": false,
+      "history": [
+        {"date": "2026-08-08", "from": "L0", "to": "L1", "reason": "95% suggestion acceptance over 2 weeks"},
+        {"date": "2026-08-15", "from": "L1", "to": "L2", "reason": "98% accuracy, zero critical misses"},
+        {"date": "2026-08-21", "from": "L2", "to": "L1", "reason": "AUTOMATIC DEMOTION: human reversed a VIP partner reschedule (Kestrel Cloud working session moved without checking deal stage) - critical miss"}
+      ]
+    },
+    "vendor": {
+      "level": "L1",
+      "locked": false,
+      "history": [
+        {"date": "2026-08-14", "from": "L0", "to": "L1", "reason": "100% acceptance on delegate-with-redirect suggestions"}
+      ]
+    },
+    "investor": {
+      "level": "L1",
+      "locked": false,
+      "history": [
+        {"date": "2026-08-17", "from": "L0", "to": "L1", "reason": "95% suggestion acceptance over 2 weeks"}
+      ]
+    },
+    "press": {
+      "level": "L0",
+      "locked": false,
+      "history": []
+    },
+    "board": {
+      "level": "L0",
+      "locked": true,
+      "history": []
+    },
+    "personal": {
+      "level": "L1",
+      "locked": false,
+      "history": [
+        {"date": "2026-08-16", "from": "L0", "to": "L1", "reason": "Consistent acceptance on personal-block protection suggestions"}
+      ]
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "owner": "Zeb (CEO, Arcadia)",
+  "tone": "Warm, brief, direct. Short sentences. First names. No corporate filler, no exclamation marks, no 'hope this finds you well'.",
+  "principles": [
+    "Lead with the answer, then the reason if one is needed.",
+    "Offer concrete times, never 'sometime next week'.",
+    "When redirecting, make the person feel routed, not rejected.",
+    "One clear next step at the end."
+  ],
+  "samples": [
+    "Dana - good timing. Two questions back at you before we meet: is this about the EMEA plan or NRR? Either way, Tuesday works.",
+    "Kyle - thanks for the note. Marcus owns our analytics stack and he's the right first conversation. Copying him here.",
+    "Priya - yes, but not Tuesday morning. That block is how the strategy memo gets written. Grab Thursday 2pm."
+  ],
+  "signoff": "- Z",
+  "internal_note_style": "Terse operator shorthand. Context first, ask second."
+}

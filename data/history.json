@@ -1,0 +1,56 @@
+{
+  "dana.whitfield@rockwaycap.com": {
+    "interactions": [
+      {"date": "2026-08-12", "topic": "Q2 board meeting", "outcome": "Approved EMEA budget contingent on Q3 net retention >= 112%"},
+      {"date": "2026-07-28", "topic": "Intro: Dana connected Zeb to CRO candidate", "outcome": "Candidate advanced to final round"},
+      {"date": "2026-06-30", "topic": "1:1 on pricing model shift", "outcome": "Dana endorsed usage-based tier; asked for churn cohort data"}
+    ],
+    "open_threads": [
+      "Q3 net retention pre-read owed to Dana before the metrics review",
+      "Churn cohort analysis promised at the June 30 1:1 - not yet sent"
+    ]
+  },
+  "kyle.brennan@parkline.io": {
+    "interactions": [],
+    "open_threads": []
+  },
+  "priya.sharma@arcadia.com": {
+    "interactions": [
+      {"date": "2026-08-27", "topic": "Biweekly 1:1", "outcome": "Agreed reorg proposal would come to Zeb before eng leads see it"},
+      {"date": "2026-08-14", "topic": "Exec offsite - platform strategy", "outcome": "Reorg greenlit in principle; Priya to draft structure"},
+      {"date": "2026-08-06", "topic": "Incident review (API latency)", "outcome": "Root cause fixed; Priya's handling praised in exec staff"}
+    ],
+    "open_threads": [
+      "Platform reorg proposal review - Zeb committed to same-week turnaround",
+      "Headcount trade-off decision for infra team (waiting on reorg shape)"
+    ]
+  },
+  "maya.chen@thesignal.press": {
+    "interactions": [
+      {"date": "2025-06-18", "topic": "Background briefing after Series C", "outcome": "Fair coverage; comms rated the interaction positive"}
+    ],
+    "open_threads": []
+  },
+  "jordan.ellis@hallorangroup.com": {
+    "interactions": [
+      {"date": "2026-08-20", "topic": "VP Sales search - candidate slate review", "outcome": "Two candidates advanced to Zeb interviews"},
+      {"date": "2026-07-15", "topic": "Search kickoff calibration", "outcome": "Aligned on profile: enterprise, EMEA experience"},
+      {"date": "2026-06-09", "topic": "Engagement signed", "outcome": "Retained search opened for VP Sales"}
+    ],
+    "open_threads": [
+      "VP Sales finalist interviews - Zeb owes availability",
+      "Unspecified 'senior leadership change' raised in this request - context unknown to the system"
+    ]
+  },
+  "grace.okafor@kestrelcloud.com.au": {
+    "interactions": [
+      {"date": "2026-08-25", "topic": "Working session 6 - legal redlines", "outcome": "Narrowed to two open points: revenue share tiers, support SLA"},
+      {"date": "2026-08-11", "topic": "Working session 5 - GTM alignment", "outcome": "Joint sell motion agreed for ANZ enterprise accounts"},
+      {"date": "2026-07-22", "topic": "Exec alignment call with Kestrel CEO", "outcome": "Both CEOs committed to Q3 close"}
+    ],
+    "open_threads": [
+      "Final terms: revenue share tiers + support SLA (this request)",
+      "Joint launch announcement draft pending deal close"
+    ]
+  }
+}

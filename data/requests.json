@@ -1,0 +1,57 @@
+[
+  {
+    "id": "req-001",
+    "channel": "email",
+    "from_name": "Dana Whitfield",
+    "from_email": "dana.whitfield@rockwaycap.com",
+    "subject": "Time this week?",
+    "body": "Zeb - hope the launch prep is going well. I'd like 30 minutes this week ahead of the Q3 metrics review. A few questions on net retention and the EMEA hiring plan I'd rather cover live. Flexible on timing.",
+    "received_at": "2026-08-31T06:40:00-07:00"
+  },
+  {
+    "id": "req-002",
+    "channel": "email",
+    "from_name": "Kyle Brennan",
+    "from_email": "kyle.brennan@parkline.io",
+    "subject": "Quick demo? Parkline x Arcadia",
+    "body": "Hi Zeb, I'll keep this short. Parkline helps SaaS leaders like Arcadia cut analytics spend 40%. Could I grab 30 minutes on your calendar this week for a personalized demo? Happy to work around your schedule.",
+    "received_at": "2026-08-31T05:15:00-07:00"
+  },
+  {
+    "id": "req-003",
+    "channel": "slack",
+    "from_name": "Priya Sharma",
+    "from_email": "priya.sharma@arcadia.com",
+    "subject": "Platform reorg - need 45 min",
+    "body": "Zeb - can I grab you Tuesday at 9:30 for 45 min? I want to walk you through the platform team reorg proposal before I socialize it with the eng leads. It's time-sensitive but not on fire.",
+    "proposed_start": "2026-09-01T09:30:00-07:00",
+    "received_at": "2026-08-31T07:05:00-07:00"
+  },
+  {
+    "id": "req-004",
+    "channel": "email",
+    "from_name": "Maya Chen",
+    "from_email": "maya.chen@thesignal.press",
+    "subject": "Press inquiry - comment on AI agent launch",
+    "body": "Hi Zeb, I'm a reporter at The Signal covering enterprise software. I'm writing a piece on AI agents in productivity suites and would love 15 minutes for comment on Arcadia's upcoming launch. My deadline is Thursday. Interview or written statement both work.",
+    "received_at": "2026-08-31T06:10:00-07:00"
+  },
+  {
+    "id": "req-005",
+    "channel": "email",
+    "from_name": "Jordan Ellis",
+    "from_email": "jordan.ellis@hallorangroup.com",
+    "subject": "Confidential - senior leadership conversation",
+    "body": "Zeb, following up on our exchange in June. I'd like 30 minutes this week to discuss the VP Sales search and a confidential personnel matter regarding a potential senior leadership change. Discretion assured as always.",
+    "received_at": "2026-08-31T06:55:00-07:00"
+  },
+  {
+    "id": "req-006",
+    "channel": "clickup_task",
+    "from_name": "Grace Okafor",
+    "from_email": "grace.okafor@kestrelcloud.com.au",
+    "subject": "APAC co-sell agreement - final terms",
+    "body": "Zeb - we're at final terms on the APAC co-sell agreement and my exec team wants to close this quarter. Could we get 45 minutes this week to align on the two open points (revenue share tiers and support SLA)? I'm in Sydney, so mornings my time work best.",
+    "received_at": "2026-08-31T04:30:00-07:00"
+  }
+]

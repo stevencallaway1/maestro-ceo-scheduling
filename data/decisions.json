@@ -1,0 +1,20 @@
+[
+  {
+    "decided_at": "2026-08-31T07:05:00-07:00",
+    "request_id": null,
+    "requester": "Ben Osei (CTO)",
+    "category": "exec_1on1",
+    "outcome": "accept",
+    "summary": "Move Tuesday CTO 1:1 to 16:00",
+    "rationale": "CFO board run-through needs a clean hour before Tuesday's 13:00 session; the CTO 1:1 is the lowest-cost move on the day and Ben flexes easily per history. Draft queued at L1 for approval."
+  },
+  {
+    "decided_at": "2026-08-31T07:10:00-07:00",
+    "request_id": null,
+    "requester": "Rob Feld (Crestline Partners)",
+    "category": "investor",
+    "outcome": "defer",
+    "summary": "Crestline intro pushed to post-launch week with a concrete slot",
+    "rationale": "Warm relationship, no active raise; policy batches non-urgent investor time after launch week. A concrete Sep 8 slot is offered so the defer still moves the relationship forward."
+  }
+]

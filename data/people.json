@@ -1,0 +1,74 @@
+{
+  "dana.whitfield@rockwaycap.com": {
+    "name": "Dana Whitfield",
+    "role": "Board Member; Partner, Rockway Capital",
+    "org": "Rockway Capital",
+    "internal": false,
+    "relationship": "Board member since the Series B (2021). Led Arcadia's Series C. Zeb's most engaged board member on GTM metrics; direct, prepared, low-maintenance. Zeb trusts her judgment on exec hiring.",
+    "timezone": "America/New_York",
+    "vip": true,
+    "sensitive_category": null,
+    "strategic_relevance": 95,
+    "relevance_justification": "Active board member preparing for the Q3 metrics review; direct influence on the EMEA expansion decision."
+  },
+  "kyle.brennan@parkline.io": {
+    "name": "Kyle Brennan",
+    "role": "Account Executive",
+    "org": "Parkline Analytics",
+    "internal": false,
+    "relationship": "No prior relationship. Cold outbound; third email this quarter from Parkline. Analytics tooling is owned by Marcus Webb (VP Data Platform), who evaluated Parkline in Q1 and passed.",
+    "timezone": "America/Chicago",
+    "vip": false,
+    "sensitive_category": null,
+    "strategic_relevance": 12,
+    "relevance_justification": "Unsolicited vendor outreach in a category already evaluated and owned by the VP Data Platform."
+  },
+  "priya.sharma@arcadia.com": {
+    "name": "Priya Sharma",
+    "role": "VP Engineering",
+    "org": "Arcadia",
+    "internal": true,
+    "relationship": "Direct report (via CTO dotted line, meets Zeb biweekly). Runs the 180-person platform org. Currently driving the platform reorg Zeb greenlit in principle at the Aug 14 offsite. High trust; brings decisions, not problems.",
+    "timezone": "America/Los_Angeles",
+    "vip": true,
+    "sensitive_category": null,
+    "strategic_relevance": 85,
+    "relevance_justification": "Owns the platform reorg, the top internal priority Zeb committed to unblocking this month."
+  },
+  "maya.chen@thesignal.press": {
+    "name": "Maya Chen",
+    "role": "Enterprise Software Reporter",
+    "org": "The Signal",
+    "internal": false,
+    "relationship": "Credible tier-1 trade reporter. Covered Arcadia's Series C fairly. Spoke with Zeb once (June 2025, on background). All press goes through comms per policy; Zeb has never done launch press without comms prep.",
+    "timezone": "America/New_York",
+    "vip": false,
+    "sensitive_category": "press",
+    "strategic_relevance": 55,
+    "relevance_justification": "Tier-1 coverage of the AI agent launch is valuable, but timing and framing are a comms decision, not a scheduling one."
+  },
+  "jordan.ellis@hallorangroup.com": {
+    "name": "Jordan Ellis",
+    "role": "Partner, Executive Search",
+    "org": "Halloran Group",
+    "internal": false,
+    "relationship": "Retained search partner on the VP Sales role (engaged May 2026). Trusted but external. References a 'confidential senior leadership change' - this touches personnel matters beyond the open search.",
+    "timezone": "America/New_York",
+    "vip": false,
+    "sensitive_category": "personnel",
+    "strategic_relevance": 60,
+    "relevance_justification": "Active retained search matters, but the topic is flagged personnel-sensitive and is never processed autonomously."
+  },
+  "grace.okafor@kestrelcloud.com.au": {
+    "name": "Grace Okafor",
+    "role": "Head of Partnerships, APAC",
+    "org": "Kestrel Cloud",
+    "internal": false,
+    "relationship": "Lead negotiator on the APAC co-sell agreement, in progress since March 2026. Six working sessions to date; deal projected at $8M ARR influence in year one. Professional, decisive, prefers early-morning Sydney calls.",
+    "timezone": "Australia/Sydney",
+    "vip": true,
+    "sensitive_category": null,
+    "strategic_relevance": 82,
+    "relevance_justification": "Final-terms stage of the largest APAC partnership in the pipeline; both exec teams want it closed this quarter."
+  }
+}

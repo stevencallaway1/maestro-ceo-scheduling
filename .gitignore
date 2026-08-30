@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.playwright-mcp/
+.video_tmp/
+demo_backup.webm
+node_modules/
+.DS_Store

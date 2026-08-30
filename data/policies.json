@@ -1,0 +1,120 @@
+{
+  "description": "Maestro scheduling policy. Rules are evaluated in ascending priority order. The first fired rule with a decisive action (accept/decline/delegate/defer/escalate_to_human) sets the outcome; 'constrain' rules shape slot selection and keep firing regardless.",
+  "rules": [
+    {
+      "id": "R-SENSITIVE-LOCK",
+      "priority": 1,
+      "plain_english": "Sensitive categories (board governance, legal, M&A, personnel) always route to a human. Maestro never auto-decides these, at any trust level, ever.",
+      "condition": {"field": "dossier.sensitive_category", "op": "in", "value": ["legal", "m_and_a", "personnel", "board_governance"]},
+      "action": "escalate_to_human"
+    },
+    {
+      "id": "R-PRESS-ROUTE",
+      "priority": 2,
+      "plain_english": "Press requests always escalate to comms + Chief of Staff. Zeb never takes press directly without comms prep.",
+      "condition": {"field": "request.meeting_type", "op": "eq", "value": "press"},
+      "action": "escalate_to_human",
+      "route_to": ["Comms (Leah Kim's team)", "Chief of Staff (Ana Reyes)"]
+    },
+    {
+      "id": "R-BOARD-48H",
+      "priority": 3,
+      "plain_english": "Board members always get time within 48 hours.",
+      "condition": {"field": "request.meeting_type", "op": "eq", "value": "board"},
+      "action": "accept",
+      "constraint": {"type": "within_hours", "hours": 48}
+    },
+    {
+      "id": "R-DEEPWORK-PROTECT",
+      "priority": 4,
+      "plain_english": "Tuesday and Thursday 9:00-12:00 are protected deep-work blocks. Nothing displaces them except board or legal.",
+      "condition": {"all": [
+        {"field": "derived.proposed_in_protected_block", "op": "eq", "value": true},
+        {"field": "request.meeting_type", "op": "not_in", "value": ["board", "legal"]}
+      ]},
+      "action": "defer"
+    },
+    {
+      "id": "R-VENDOR-DELEGATE",
+      "priority": 5,
+      "plain_english": "Vendors and unsolicited external requests are delegated to the relevant exec with a warm redirect. Zeb's calendar is not top-of-funnel.",
+      "condition": {"all": [
+        {"field": "request.meeting_type", "op": "eq", "value": "vendor"},
+        {"field": "dossier.vip", "op": "eq", "value": false}
+      ]},
+      "action": "delegate",
+      "delegate_to": "Marcus Webb, VP Data Platform"
+    },
+    {
+      "id": "R-COLD-LOWREL",
+      "priority": 6,
+      "plain_english": "External requesters with no relationship and strategic relevance under 30 are delegated to the Chief of Staff for triage.",
+      "condition": {"all": [
+        {"field": "request.requester_internal", "op": "eq", "value": false},
+        {"field": "dossier.interaction_count", "op": "eq", "value": 0},
+        {"field": "dossier.strategic_relevance", "op": "lt", "value": 30}
+      ]},
+      "action": "delegate",
+      "delegate_to": "Ana Reyes, Chief of Staff"
+    },
+    {
+      "id": "R-PARTNER-VIP",
+      "priority": 7,
+      "plain_english": "Strategic external partners (relevance 70+) with an active deal thread get accepted this week.",
+      "condition": {"all": [
+        {"field": "request.meeting_type", "op": "eq", "value": "external_partner"},
+        {"field": "dossier.strategic_relevance", "op": "gte", "value": 70}
+      ]},
+      "action": "accept"
+    },
+    {
+      "id": "R-EXEC-ACCEPT",
+      "priority": 8,
+      "plain_english": "Direct reports and exec team members get time within the week; their asks are pre-triaged by role.",
+      "condition": {"field": "request.meeting_type", "op": "eq", "value": "exec_1on1"},
+      "action": "accept"
+    },
+    {
+      "id": "R-NO-EXTERNAL-AM",
+      "priority": 9,
+      "plain_english": "No external meetings before 10:00 local. Mornings belong to the company (board and investors excepted).",
+      "condition": {"all": [
+        {"field": "request.requester_internal", "op": "eq", "value": false},
+        {"field": "request.meeting_type", "op": "not_in", "value": ["board", "investor"]}
+      ]},
+      "action": "constrain",
+      "constraint": {"type": "no_start_before_local", "hour": 10}
+    },
+    {
+      "id": "R-BLOCKS-NEVER-OFFERED",
+      "priority": 10,
+      "plain_english": "Protected deep-work blocks are never offered as available slots except to board or legal.",
+      "condition": {"field": "request.meeting_type", "op": "not_in", "value": ["board", "legal"]},
+      "action": "constrain",
+      "constraint": {"type": "exclude_protected"}
+    },
+    {
+      "id": "R-BATCH-EXTERNAL",
+      "priority": 11,
+      "plain_english": "External meetings are batched into Tuesday and Thursday afternoons to keep the rest of the week coherent.",
+      "condition": {"field": "request.requester_internal", "op": "eq", "value": false},
+      "action": "constrain",
+      "constraint": {"type": "prefer_windows", "windows": [{"weekday": "Tue", "start": "13:00", "end": "17:30"}, {"weekday": "Thu", "start": "13:00", "end": "17:30"}]}
+    },
+    {
+      "id": "R-TZ-FAIRNESS",
+      "priority": 12,
+      "plain_english": "Proposed times must land between 08:00 and 18:00 in the requester's timezone. We don't make partners take midnight calls.",
+      "condition": {"field": "request.requester_internal", "op": "eq", "value": false},
+      "action": "constrain",
+      "constraint": {"type": "requester_hours", "start_hour": 8, "end_hour": 18}
+    },
+    {
+      "id": "R-DEFAULT-DEFER",
+      "priority": 99,
+      "plain_english": "Anything no other rule claims is deferred to the Chief of Staff. When in doubt, a human decides.",
+      "condition": {"field": "request.id", "op": "ne", "value": ""},
+      "action": "defer"
+    }
+  ]
+}

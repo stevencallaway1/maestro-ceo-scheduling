@@ -1,0 +1,3 @@
+{"ts": "2026-08-31T07:05:12-07:00", "actor": "maestro", "stage": "approval_queue", "request_id": null, "summary": "Queued reschedule draft for CTO 1:1 (exec_1on1, L1 - awaiting approval)"}
+{"ts": "2026-08-31T07:10:44-07:00", "actor": "maestro", "stage": "approval_queue", "request_id": null, "summary": "Queued reply draft for Crestline intro request (investor, L1 - awaiting approval)"}
+{"ts": "2026-08-31T07:15:02-07:00", "actor": "maestro", "stage": "optimizer", "request_id": null, "summary": "Weekly calendar pass complete: 2 deep-work blocks at risk, 3 batching candidates found"}
