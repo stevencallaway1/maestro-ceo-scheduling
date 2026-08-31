@@ -173,8 +173,10 @@ class Critique:
 
     ``verdict`` is the worst severity found: ``pass`` when the plan is clean,
     ``revise`` when a human should look before it goes out, ``block`` when the
-    plan must not execute as written. Anything other than ``pass`` forces the
-    approval queue regardless of trust level.
+    plan must not execute as written, and ``not_run`` when the hard lock stopped
+    the pipeline before a plan existed to review. Anything other than ``pass``
+    forces the approval queue regardless of trust level; ``block`` cannot be
+    approved at all, and ``revise`` only by a human who acknowledges the findings.
     """
 
     request_id: str
@@ -197,7 +199,7 @@ class ExecutionResult:
 
     approval_id: str
     request_id: str | None
-    action: str  # "calendar_hold" | "route_only" | "no_action"
+    action: str  # "provisional_hold" | "route_only" | "no_action"
     simulated: bool
     summary: str
     event: dict[str, Any] | None = None

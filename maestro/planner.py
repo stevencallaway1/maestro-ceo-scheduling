@@ -16,7 +16,12 @@ outcome comes from the policy engine and the slots come from
 deterministic layer owns the decision boundary. That split is what makes the
 system safe to point at a real calendar.
 
-One model call per request, through :mod:`maestro.llm`.
+One model call per request, through :mod:`maestro.llm` - except on the
+sensitive-category lockout path, which never reaches the seam at all.
+``plan`` refuses a hard-locked request outright; ``locked_plan`` produces the
+routing note in deterministic code instead. That refusal is the lockout: a
+sensitive topic is not summarized, paraphrased, or drafted around by a model,
+because it is never sent to one.
 """
 from __future__ import annotations
 
@@ -43,6 +48,10 @@ def _rule_citation(policy: PolicyResult) -> str:
     return f'{policy.deciding_rule_id} ("{deciding.plain_english}")' if deciding else "the default policy"
 
 
+def _opening(dossier: Dossier) -> str:
+    return f"{dossier.requester_name} - {dossier.relationship_summary.split('.')[0].strip()}."
+
+
 def _rationale(ctx: dict[str, Any]) -> str:
     """The written 'why' behind the decision."""
     request: RequestObject = ctx["request"]
@@ -51,26 +60,15 @@ def _rationale(ctx: dict[str, Any]) -> str:
     slots: list[Slot] = ctx["slots"]
     rule_cite = _rule_citation(policy)
 
-    sentences = [f"{dossier.requester_name} - {dossier.relationship_summary.split('.')[0].strip()}."]
+    sentences = [_opening(dossier)]
 
     if policy.outcome == "escalate_to_human":
-        if policy.hard_locked:
-            sentences.append(
-                f"The request touches a sensitive category ({dossier.sensitive_category}), "
-                f"so {rule_cite} hard-locks it: Maestro takes no scheduling action and routes "
-                "it straight to Zeb."
-            )
-            if dossier.open_threads:
-                sentences.append(
-                    f"Context for when he picks it up: {dossier.open_threads[-1].rstrip('.')}."
-                )
-        else:
-            routed = " and ".join(policy.route_to) if policy.route_to else "the right owners"
-            sentences.append(f"Per {rule_cite}, this routes to {routed} rather than the calendar.")
-            sentences.append(
-                f"Relevance is {dossier.strategic_relevance}/100 ({dossier.relevance_justification.rstrip('.')}), "
-                "so speed matters but the decision is not Maestro's to make."
-            )
+        routed = " and ".join(policy.route_to) if policy.route_to else "the right owners"
+        sentences.append(f"Per {rule_cite}, this routes to {routed} rather than the calendar.")
+        sentences.append(
+            f"Relevance is {dossier.strategic_relevance}/100 ({dossier.relevance_justification.rstrip('.')}), "
+            "so speed matters but the decision is not Maestro's to make."
+        )
     elif policy.outcome == "delegate":
         sentences.append(
             f"Strategic relevance is {dossier.strategic_relevance}/100: {dossier.relevance_justification}"
@@ -186,14 +184,6 @@ def _reply_body(ctx: dict[str, Any]) -> str:
         )
 
     # escalate_to_human: an internal routing note, never an external reply.
-    if policy.hard_locked:
-        return (
-            f"[INTERNAL - not for sending] Routed directly to Zeb.\n\n"
-            f"{dossier.requester_name} ({dossier.requester_email}) raised a "
-            f"{dossier.sensitive_category}-category topic. "
-            f"Maestro does not read into, schedule, or reply to sensitive-category requests. "
-            f"No hold was created and no reply was drafted. Full dossier attached for context."
-        )
     routed = ", ".join(policy.route_to) if policy.route_to else "Chief of Staff"
     return (
         f"[INTERNAL - not for sending] Routed to: {routed}.\n\n"
@@ -228,6 +218,65 @@ def _trust_note(level: str, hard_locked: bool) -> str:
     }.get(level, "L0 (suggest only): Maestro recommends; a human executes everything.")
 
 
+def _locked_rationale(dossier: Dossier, policy_result: PolicyResult) -> str:
+    """Why the lockout fired. Written in code, not by a model."""
+    sentences = [
+        _opening(dossier),
+        f"The request touches a sensitive category ({dossier.sensitive_category}), so "
+        f"{_rule_citation(policy_result)} hard-locks it: Maestro takes no scheduling action, "
+        "makes no model call, and routes it straight to Zeb.",
+    ]
+    if dossier.open_threads:
+        sentences.append(f"Context for when he picks it up: {dossier.open_threads[-1].rstrip('.')}.")
+    return " ".join(sentences)
+
+
+def _locked_note(dossier: Dossier) -> str:
+    """The internal routing note for a locked request. Fixed text, no model."""
+    return (
+        f"[INTERNAL - not for sending] Routed directly to Zeb.\n\n"
+        f"{dossier.requester_name} ({dossier.requester_email}) raised a "
+        f"{dossier.sensitive_category}-category topic. "
+        f"Maestro does not read into, schedule, or reply to sensitive-category requests. "
+        f"The pipeline stopped at the policy engine: no model stage ran on this request, "
+        f"no hold was created, and no reply was drafted. Full dossier attached for context."
+    )
+
+
+def locked_plan(request: RequestObject, dossier: Dossier,
+                policy_result: PolicyResult) -> tuple[Decision, Draft]:
+    """The plan for a hard-locked request, built without touching the model seam.
+
+    This is the lockout in code. A sensitive topic is not paraphrased, drafted
+    around, or summarized by a model, because it is never sent to one. The
+    routing note is fixed text over dossier facts the pipeline already had.
+    """
+    if not policy_result.hard_locked:
+        raise ValueError("locked_plan() is only for hard-locked requests.")
+
+    decision = Decision(
+        request_id=request.id,
+        outcome=policy_result.outcome,
+        proposed_slots=[],
+        rationale=_locked_rationale(dossier, policy_result),
+        trust_level="L0",
+        trust_note=_trust_note("L0", True),
+        delegate_to=policy_result.delegate_to,
+        route_to=policy_result.route_to,
+        hard_locked=True,
+    )
+    routed = ", ".join(policy_result.route_to) if policy_result.route_to else "Chief of Staff"
+    draft = Draft(
+        request_id=request.id,
+        kind="internal_note",
+        to=f"Zeb + {routed}",
+        subject=f"Routing: {request.topic}",
+        body=_locked_note(dossier),
+        approval_required=True,
+    )
+    return decision, draft
+
+
 def plan(request: RequestObject, dossier: Dossier, policy_result: PolicyResult,
          calendar: dict[str, Any], trust_categories: dict[str, Any],
          voice: dict[str, Any], derived: dict[str, Any] | None = None,
@@ -237,9 +286,17 @@ def plan(request: RequestObject, dossier: Dossier, policy_result: PolicyResult,
     Slots are found by deterministic calendar math before the model is called,
     so the Planner can only ever write about times that are provably free and
     policy-clean. Returns ``(Decision, Draft)``; the Draft is never auto-sent.
+
+    Raises on a hard-locked request. The seam is the line a sensitive topic
+    must not cross, so crossing it is an error rather than a special case.
     """
+    if policy_result.hard_locked:
+        raise ValueError(
+            "Hard-locked requests must never reach the model seam. Use locked_plan()."
+        )
+
     slots: list[Slot] = []
-    if policy_result.outcome in ("accept", "defer") and not policy_result.hard_locked:
+    if policy_result.outcome in ("accept", "defer"):
         slots = find_slots(
             calendar,
             duration_minutes=request.requested_duration_minutes,
@@ -248,7 +305,7 @@ def plan(request: RequestObject, dossier: Dossier, policy_result: PolicyResult,
         )
 
     category = trust_categories.get(request.meeting_type, {})
-    level = "L0" if policy_result.hard_locked else category.get("level", "L0")
+    level = category.get("level", "L0")
 
     # The one model call for this stage.
     written = provider.generate("plan", {
@@ -262,10 +319,10 @@ def plan(request: RequestObject, dossier: Dossier, policy_result: PolicyResult,
         proposed_slots=slots,
         rationale=written["rationale"],
         trust_level=level,
-        trust_note=_trust_note(level, policy_result.hard_locked),
+        trust_note=_trust_note(level, False),
         delegate_to=policy_result.delegate_to,
         route_to=policy_result.route_to,
-        hard_locked=policy_result.hard_locked,
+        hard_locked=False,
     )
 
     internal = policy_result.outcome == "escalate_to_human"

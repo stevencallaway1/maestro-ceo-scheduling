@@ -41,6 +41,9 @@ Six stages, run in order, with an audit entry written at each one.
 | 5 | **Critic** | **Model-backed** | Reviews the plan before a human sees it. Returns pass, revise, or block. One call. |
 | 6 | **Approval** | Deterministic | Routes to a human. Nothing is sent or booked without one. |
 
+Stages 4 and 5 are skipped entirely when the policy engine hard-locks a request, so a
+sensitive topic costs zero model calls. Each run reports its own count.
+
 Then the **calendar adapter** executes the approved plan, and the **trust ladder** scores the
 human's verdict and adjusts how much autonomy that category gets next time.
 
@@ -68,8 +71,12 @@ Three consequences follow, and they are the point:
 2. **The Planner cannot invent a time.** `find_slots` runs *before* the model call and only ever
    returns slots that are provably free, inside business hours, and compliant with every
    constraint the fired rules attached. The Planner writes about that list; it does not produce it.
-3. **Sensitive topics never reach a model stage at all.** The hard lock fires at the policy engine
-   and routes straight to a human.
+3. **Sensitive topics never reach a model stage at all.** The hard lock fires at the policy
+   engine and the pipeline stops there: `planner.plan` *raises* on a hard-locked request, and the
+   routing note is built by `planner.locked_plan` in deterministic code instead. A sensitive topic
+   is never summarized, paraphrased, or drafted around by a model, because it is never sent to one.
+   Every call through the seam is logged, so this is a number the UI shows and a test asserts, not
+   a claim in a README.
 
 Both model stages go through one interface (`maestro/llm.py`) and return structured objects, the
 same shape a real model returns under a JSON schema. The cap of two calls per request is declared
@@ -91,8 +98,13 @@ Slot legality is deliberately *not* a check. Those slots are legal by constructi
 them would be theater. The Critic reviews judgment, not arithmetic.
 
 In the demo, the board member's request trips `commitment_coverage`: the reply never mentions the
-churn cohort analysis promised on June 30 and still not sent. The verdict is the gate on autonomy:
-as categories climb the ladder, only a clean `pass` is ever eligible to execute unattended.
+churn cohort analysis promised on June 30 and still not sent.
+
+**The verdict is a gate, and the gate is on the server.** `block` cannot be approved at all;
+the API refuses it and the button is disabled. `revise` can only be approved by a human who
+acknowledges the findings first, and that acknowledgment is recorded on the decision as
+`critic_override: true`. As categories climb the ladder, only a clean `pass` is ever eligible to
+execute unattended. A verdict the UI could click past would be decoration; this one cannot be.
 
 ## The trust ladder
 
@@ -112,7 +124,7 @@ permanently and cannot be promoted by any track record.
 ```bash
 make install     # venv + dependencies
 make run         # http://localhost:8000
-make test        # 59 tests
+make test        # 74 tests
 make reset       # restore the seeded demo state
 ```
 
@@ -125,10 +137,14 @@ editable by hand before a run.
    board member is accepted inside 48 hours with times in her timezone, and the Critic flags the
    unmet commitment.
 2. Click **Jordan Ellis**, run it. The sensitive-category lockout fires at the policy engine.
-   Maestro builds the dossier and stops; no draft, no hold, no model call on the topic.
+   Maestro builds the dossier and stops: the Planner and Critic cards both read *stage skipped*,
+   the run reports **0 of 2 model calls**, and the only output is a fixed routing note to Zeb.
 3. Click **Grace Okafor**, run it. Accepted with Sydney-fair mornings, and a clean Critic pass.
-4. **Daily Brief** → read the brief, then **Approve** Dana's plan. The calendar adapter places the
-   hold and says so.
+4. **Daily Brief** → read the brief, then try to **Approve** Dana's plan. The Critic flagged it
+   `revise`, so the button is disabled until you tick the acknowledgment; the server refuses the
+   approval either way. Tick it, approve, and the adapter places a *tentative* hold on Zeb's
+   calendar only. Dana gets no invite, because she has not picked a time yet. Click Approve again:
+   it is recorded once.
 5. **Override** Grace's plan instead, with any reason. She is a VIP, so the reversal is a critical
    miss and demotes external partners L1 → L0 live.
 6. **Trust & Audit** → the demotion is already on the ladder, the metrics moved, and the audit log
@@ -139,7 +155,8 @@ editable by hand before a run.
 ## Key design decisions
 
 1. **Two model calls, not an agent swarm.** Naming every module an "agent" would inflate the
-   architecture without adding capability. Six stages, two of which call a model, is the honest
+   architecture without adding capability. Six stages, two of which call a model (zero on the
+   locked path), is the honest
    description and the more defensible system.
 2. **Policy as data, not code.** `data/policies.json` holds 13 rules, each with a plain-English
    statement of intent. A chief of staff can read, argue with, and edit it without an engineer.
@@ -158,22 +175,39 @@ editable by hand before a run.
    governs *displacement* of a block, not whether it shows up in a list of free times.
 7. **Timezone fairness is a policy constraint, not a formatting choice.** Proposed times must land
    in the requester's working day, and every draft shows their local time first.
-8. **Execution is idempotent by contract.** Each approval carries a stable idempotency key, so a
-   replayed approval cannot double-book. That contract is real code today even though the send is
-   simulated.
-9. **Demo "now" is pinned** in `data/calendar.json` (`demo_now`) so slot math is deterministic and
-   hand-tunable, and the eval window anchors to the newest recorded verdict rather than the wall
-   clock.
+8. **Execution is idempotent by contract, and so is the human verdict.** Each approval carries a
+   stable idempotency key, so a replayed approval cannot double-book. The endpoints refuse to
+   action the same queue item twice at all: one approval, one recorded verdict, one audit line, one
+   demotion. A duplicated verdict would quietly skew the acceptance rate that promotes and demotes
+   categories, which makes it a data-integrity bug in the trust mechanism, not a UI annoyance.
+   The whole transition is serialized behind a lock, because sequential idempotency is not enough:
+   the endpoints are synchronous, the server runs them in a threadpool, and a check-then-act that
+   interleaves writes one audit line per thread and loses all but one write to `overrides.json`.
+   Two tests hold that line by running five simultaneous verdicts against one item.
+9. **Approving a plan books only what the reply promised.** An accepted request offers three times
+   and asks the requester to pick one, so approval places a *tentative* hold on the CEO's calendar
+   and adds no attendees. The requester gets no invite until they choose. Booking option one and
+   inviting them to it would make the outbound message false.
+10. **Demo "now" is pinned** in `data/calendar.json` (`demo_now`) so slot math is deterministic
+   and hand-tunable, and the eval window anchors to the newest recorded verdict rather than the
+   wall clock.
 
 ## Known limitations, and what is simulated
 
 Stated plainly, because the interface says the same thing.
 
 - **The two model calls are simulated.** They run on deterministic templates behind the
-  `ModelProvider` interface. The call sites, the structured contracts, and the Critic's four checks
-  are real; only the network round trip is absent. Production registers a Claude-backed provider
-  and changes no pipeline code. This was a deliberate choice: it keeps the live demo unfailable and
-  keeps output stable across runs.
+  `ModelProvider` interface. The call sites, the structured contracts, the seam's call log, and the
+  Critic's four checks are real; only the network round trip is absent. Production registers a
+  Claude-backed provider and changes no pipeline code. This was a deliberate choice: it keeps the
+  live demo unfailable and keeps output stable across runs.
+- **Confirming a chosen time is not built.** Approval places the tentative hold; a human turns it
+  into a confirmed invite once the requester replies with their pick. Closing that loop needs
+  inbound reply parsing, which is out of scope here.
+- **A cold start on the deployed demo re-opens a queue item.** State lives in memory there, so if
+  an instance recycles between running a request and approving it, the pipeline deterministically
+  rebuilds the queue entry as `pending`. That is the recovery path doing its job, not a lost
+  idempotency guarantee; locally, where state persists, a verdict is recorded exactly once.
 - **The calendar adapter is simulated.** `execute.py` builds the exact event payload and
   idempotency key it would send and records it, but makes no external call. Implementing `_send`
   against a real client is the only change needed.
@@ -208,5 +242,5 @@ maestro/
   brief.py  optimizer.py  daily brief, background calendar pass
 data/                   all state as hand-editable JSON, plus seed/ snapshots
 static/                 single-page UI, no build step, no dependencies
-tests/                  59 tests: policy, trust, pipeline, critic, execution
+tests/                  74 tests: policy, trust, pipeline, critic, execution, approvals
 ```

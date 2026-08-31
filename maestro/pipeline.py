@@ -13,6 +13,12 @@ Two of the six call a model, once each. The stages that decide what is allowed,
 what gets booked, and what gets recorded are all deterministic, which is what
 makes the system auditable and safe to point at a real calendar.
 
+On the sensitive-category lockout path that count is zero. When the policy
+engine hard-locks a request, stages 4 and 5 are skipped outright: the routing
+note is written in deterministic code and the model seam is never touched. The
+run reports its own model-call count, so the claim is visible rather than
+asserted.
+
 Every stage returns its full artifact so the UI can render the whole chain of
 reasoning. Nothing here is a black box.
 """
@@ -21,7 +27,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
-from . import audit, calendarlib, context, critic, intake, planner, policy, store, trust
+from . import audit, calendarlib, context, critic, intake, llm, planner, policy, store, trust
 from .models import OUTCOME_LABEL
 
 
@@ -44,6 +50,9 @@ class Pipeline:
         payload = next((r for r in self.inbox() if r["id"] == request_id), None)
         if payload is None:
             raise KeyError(f"Unknown request id: {request_id}")
+
+        # Count what this run actually costs at the model seam.
+        llm.DEFAULT_PROVIDER.reset_log()
 
         # 1. Intake - normalize the raw payload.
         request = intake.parse(payload, self.people)
@@ -71,18 +80,29 @@ class Pipeline:
         audit.record("policy", f"Outcome {policy_result.outcome} via "
                      f"{policy_result.deciding_rule_id} (fired: {fired})", request_id=request.id)
 
-        # 4. Planner (model call 1) - the decision, its rationale, and the draft.
-        trust_state = trust.load_state()
-        decision, draft = planner.plan(request, dossier, policy_result, self.calendar,
-                                       trust_state["categories"], self.voice, derived)
-        audit.record("planner", f"Plan: {decision.outcome} at trust {decision.trust_level}"
-                     + (f", {len(decision.proposed_slots)} slots proposed"
-                        if decision.proposed_slots else ""), request_id=request.id)
+        if policy_result.hard_locked:
+            # The lockout is a circuit breaker, not a label. Stages 4 and 5 are
+            # skipped: the routing note is built in code and the model seam is
+            # never touched, so a sensitive topic is never sent to a model.
+            decision, draft = planner.locked_plan(request, dossier, policy_result)
+            critique = critic.skipped_for_lockout(request)
+            audit.record("planner", "Skipped - sensitive lockout. No model call; routing "
+                         "note built deterministically.", request_id=request.id)
+            audit.record("critic", "Skipped - sensitive lockout. No plan was written, so "
+                         "there is nothing to review.", request_id=request.id)
+        else:
+            # 4. Planner (model call 1) - the decision, its rationale, and the draft.
+            trust_state = trust.load_state()
+            decision, draft = planner.plan(request, dossier, policy_result, self.calendar,
+                                           trust_state["categories"], self.voice, derived)
+            audit.record("planner", f"Plan: {decision.outcome} at trust {decision.trust_level}"
+                         + (f", {len(decision.proposed_slots)} slots proposed"
+                            if decision.proposed_slots else ""), request_id=request.id)
 
-        # 5. Critic (model call 2) - review the plan before a human sees it.
-        critique = critic.review(request, dossier, policy_result, decision, draft, self.voice)
-        audit.record("critic", f"Critique: {critique.verdict} - {critique.summary}",
-                     request_id=request.id)
+            # 5. Critic (model call 2) - review the plan before a human sees it.
+            critique = critic.review(request, dossier, policy_result, decision, draft, self.voice)
+            audit.record("critic", f"Critique: {critique.verdict} - {critique.summary}",
+                         request_id=request.id)
 
         # 6. Approval routing - nothing is ever sent or booked without a human.
         approval = self._enqueue(request, dossier, decision, draft, critique)
@@ -99,10 +119,15 @@ class Pipeline:
             "draft": draft.to_dict(),
             "approval_id": approval["id"],
             "derived": derived,
+            # What this run actually cost at the model seam: [] on the lockout
+            # path, ["plan", "critique"] everywhere else.
+            "model_calls": list(llm.DEFAULT_PROVIDER.call_log),
+            "model_call_cap": len(llm.TASKS),
             "banner": {
                 "sensitive_lockout": policy_result.hard_locked,
                 "text": ("Sensitive category detected - this request is hard-locked to human "
-                         "review (L0, permanent). Maestro built the dossier, then stopped.")
+                         "review (L0, permanent). Maestro built the dossier and stopped there: "
+                         "the Planner and Critic never ran, and no model saw this topic.")
                 if policy_result.hard_locked else None,
             },
         }
@@ -143,6 +168,9 @@ class Pipeline:
             "requester_email": dossier.requester_email,
             "topic": request.topic,
             "kind": draft.kind,
+            # The whole message, so the approval card shows what is being approved.
+            "draft_to": draft.to,
+            "draft_subject": draft.subject,
             "outcome": decision.outcome,
             "vip": dossier.vip,
             "sensitive_category": dossier.sensitive_category,

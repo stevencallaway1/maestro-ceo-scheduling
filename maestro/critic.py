@@ -17,15 +17,19 @@ cannot see:
 
 Each finding carries a severity. The verdict is the worst one found:
 
-  pass    clean; at L2+ this is the only verdict eligible to execute unattended
-  revise  a human must look before this goes out, whatever the trust level
-  block   the plan must not execute as written
+  pass     clean; at L2+ this is the only verdict eligible to execute unattended
+  revise   a human must look before this goes out, whatever the trust level
+  block    the plan must not execute as written
+  not_run  no plan was produced to review (the sensitive-category lockout)
 
-In the seeded demo every category in the request path sits at L0 or L1, so
-every plan waits for a human regardless. The verdict is what the approver sees
-first, and it is the gate that governs autonomy as categories climb the ladder.
+The verdict is a gate, not a label. ``block`` cannot be approved through the
+API at all; ``revise`` can only be approved by a human who acknowledges the
+findings first, and that acknowledgment is recorded. In the seeded demo every
+category in the request path sits at L0 or L1, so every plan waits for a human
+regardless, and the verdict is what governs autonomy as categories climb.
 
-One model call per request, through :mod:`maestro.llm`.
+One model call per request, through :mod:`maestro.llm` - except on the lockout
+path, where there is no plan to review because none was written.
 """
 from __future__ import annotations
 
@@ -228,4 +232,22 @@ def review(request: RequestObject, dossier: Dossier, policy_result: PolicyResult
         findings=[Finding(**f) for f in result["findings"]],
         checks_run=list(CHECKS),
         summary=result["summary"],
+    )
+
+
+def skipped_for_lockout(request: RequestObject) -> Critique:
+    """The Critique for a request the hard lock stopped before the Planner.
+
+    Not a pass. A pass means four checks ran clean; this means there was no
+    plan to check, because the pipeline stopped at the policy engine and never
+    called a model. Recording it as ``not_run`` keeps the distinction visible
+    in the queue, the brief, and the audit trail.
+    """
+    return Critique(
+        request_id=request.id,
+        verdict="not_run",
+        findings=[],
+        checks_run=[],
+        summary="No plan to review: the hard lock stopped the pipeline before either "
+                "model stage ran.",
     )

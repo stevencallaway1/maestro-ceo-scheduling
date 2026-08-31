@@ -5,9 +5,18 @@ Nothing here decides anything. By the time a plan reaches this module a human
 has approved it, and execution is a mechanical translation of the approved
 decision into one of three actions:
 
-  calendar_hold  the approved slot becomes a hold on the CEO's calendar
-  route_only     the ask was delegated or escalated; there is no calendar write
-  no_action      the request was declined
+  provisional_hold  the offered times become a tentative hold on the CEO's
+                    calendar, and nothing else
+  route_only        the ask was delegated or escalated; no calendar write
+  no_action         the request was declined
+
+**Execution never books more than the reply promised.** An accepted request
+offers the requester three times and asks them to pick one. So the hold is
+provisional and sits on the CEO's calendar alone: the requester is not added as
+an attendee and receives no invite, because they have not chosen a time yet.
+Confirming the pick is a separate, later step - a human one in this build. The
+alternative, silently booking the first option and inviting the requester to it,
+would make the outbound message a lie.
 
 **In this build the adapter is simulated.** It constructs the exact payload it
 would send, assigns the idempotency key it would send it under, and records the
@@ -33,15 +42,25 @@ _BOOKING_OUTCOMES = ("accept", "defer")
 
 def _event_payload(approval: dict[str, Any], slot: dict[str, Any],
                    calendar: dict[str, Any]) -> dict[str, Any]:
-    """The event body the adapter would send to the calendar provider."""
+    """The event body the adapter would send to the calendar provider.
+
+    Tentative, and on the CEO's calendar only. The requester is deliberately
+    not an attendee: the reply offered them options and asked them to pick, so
+    inviting them to one of those options would book something nobody agreed to.
+    """
+    slots = approval.get("slots") or [slot]
     return {
         "calendar_id": calendar.get("calendar_id", "zeb@arcadia.com"),
-        "title": f"{approval['requester']} - {approval.get('topic', approval['summary'])}",
+        "title": f"HOLD (awaiting confirmation): {approval['requester']} - "
+                 f"{approval.get('topic', approval['summary'])}",
         "start": slot["start"],
         "end": slot["end"],
         "timezone": calendar["timezone"],
-        "attendees": [a for a in (calendar.get("calendar_id", "zeb@arcadia.com"),
-                                  approval.get("requester_email")) if a],
+        # CEO only. No invite goes out until the requester picks a time.
+        "attendees": [calendar.get("calendar_id", "zeb@arcadia.com")],
+        "status": "tentative",
+        "pending_confirmation": True,
+        "offered_slots": [s.get("requester_local") for s in slots],
         "visibility": "default",
         "source": "maestro",
         # Replaying the same approval can never double-book.
@@ -73,11 +92,14 @@ def execute(approval: dict[str, Any], calendar: dict[str, Any]) -> ExecutionResu
         slot = slots[0]
         payload = _event_payload(approval, slot, calendar)
         _send(payload)
+        first_name = approval["requester"].split(" ")[0]
         result = ExecutionResult(
             approval_id=approval["id"], request_id=approval.get("request_id"),
-            action="calendar_hold", simulated=True,
-            summary=f"Hold placed for {approval['requester']}: {slot['ceo_local']} "
-                    f"({slot['requester_local']} their time).",
+            action="provisional_hold", simulated=True,
+            summary=f"Tentative hold on Zeb's calendar only: {slot['ceo_local']} "
+                    f"({slot['requester_local']} their time), the first of "
+                    f"{len(slots)} option(s) offered. No invite sent - "
+                    f"{first_name} picks a time, then it is confirmed.",
             event=payload, executed_at=now,
         )
     elif outcome in ("delegate", "escalate_to_human"):

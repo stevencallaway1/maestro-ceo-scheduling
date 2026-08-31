@@ -30,8 +30,11 @@ def _decision_lines(decisions: list[dict[str, Any]]) -> list[str]:
     lines = []
     for d in decisions:
         label = OUTCOME_LABEL.get(d["outcome"], d["outcome"])
-        flag = " *(Critic: revise)*" if d.get("critic_verdict") == "revise" else ""
-        flag = " *(Critic: blocked)*" if d.get("critic_verdict") == "block" else flag
+        flag = {
+            "revise": " *(Critic: revise)*",
+            "block": " *(Critic: blocked)*",
+            "not_run": " *(hard lock: no model stage ran)*",
+        }.get(d.get("critic_verdict"), "")
         lines.append(f"- **{label}** - {d['requester']}: {d['summary']}{flag}")
         lines.append(f"  - *Why:* {d['rationale']}")
     return lines

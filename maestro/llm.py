@@ -11,6 +11,10 @@ identical output contract, rendered from deterministic templates instead of a
 network round trip. That keeps the live demo unfailable and makes the
 production swap a one-line change (register a Claude-backed provider) with no
 edits to pipeline code.
+
+Every call through the seam is logged. The log is what lets the pipeline report
+how many model calls a request actually cost, and what lets a test *prove* the
+sensitive-category lockout stops before the seam rather than merely claiming it.
 """
 from __future__ import annotations
 
@@ -23,8 +27,14 @@ TASKS = ("plan", "critique")
 class ModelProvider(Protocol):
     """Interface every model backend must satisfy."""
 
+    call_log: list[str]
+
     def generate(self, task: str, context: dict[str, Any]) -> dict[str, Any]:
         """Return a structured object for a named task (``plan``/``critique``)."""
+        ...
+
+    def reset_log(self) -> None:
+        """Clear the call log. Called at the start of each pipeline run."""
         ...
 
 
@@ -39,6 +49,7 @@ class TemplateProvider:
 
     def __init__(self) -> None:
         self._templates: dict[str, Callable[[dict[str, Any]], dict[str, Any]]] = {}
+        self.call_log: list[str] = []
 
     def register(self, task: str, fn: Callable[[dict[str, Any]], dict[str, Any]]) -> None:
         """Register a callable ``fn(context) -> dict`` for a task name."""
@@ -46,10 +57,15 @@ class TemplateProvider:
             raise ValueError(f"Unknown model task '{task}'. Known tasks: {TASKS}")
         self._templates[task] = fn
 
+    def reset_log(self) -> None:
+        """Clear the call log, so one run's count is not another's."""
+        self.call_log = []
+
     def generate(self, task: str, context: dict[str, Any]) -> dict[str, Any]:
         fn = self._templates.get(task)
         if fn is None:
             raise KeyError(f"No template registered for task '{task}'")
+        self.call_log.append(task)
         return fn(context)
 
 

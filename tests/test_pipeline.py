@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from maestro import critic, execute, store
+from maestro import critic, execute, llm, store
 from maestro.pipeline import Pipeline
 
 PROJECT_DATA = Path(__file__).resolve().parent.parent / "data"
@@ -51,6 +51,43 @@ class TestPipelineStages:
     def test_unknown_request_raises(self, pipeline):
         with pytest.raises(KeyError):
             pipeline.run("req-nope")
+
+
+class TestModelSeam:
+    """The sensitive-category lockout is a circuit breaker, not a label."""
+
+    def test_hard_locked_request_makes_zero_model_calls(self, pipeline):
+        r = pipeline.run("req-005")
+        assert llm.DEFAULT_PROVIDER.call_log == []
+        assert r["model_calls"] == []
+
+    def test_ordinary_request_makes_exactly_two(self, pipeline):
+        r = pipeline.run("req-001")
+        assert llm.DEFAULT_PROVIDER.call_log == ["plan", "critique"]
+        assert r["model_calls"] == ["plan", "critique"]
+        assert r["model_call_cap"] == 2
+
+    def test_lockout_produces_a_routing_note_without_the_seam(self, pipeline):
+        r = pipeline.run("req-005")
+        assert r["draft"]["kind"] == "internal_note"
+        assert "no model stage ran" in r["draft"]["body"]
+        assert r["decision"]["proposed_slots"] == []
+
+    def test_planner_refuses_a_hard_locked_request(self, pipeline):
+        """The seam is the line a sensitive topic must not cross."""
+        from maestro import planner
+
+        parts = _rebuild(pipeline, "req-005")
+        with pytest.raises(ValueError, match="never reach the model seam"):
+            planner.plan(parts["request"], parts["dossier"], parts["policy"],
+                         pipeline.calendar, {}, pipeline.voice, {})
+
+    def test_lockout_stages_are_audited_as_skipped(self, pipeline):
+        pipeline.run("req-005")
+        entries = {e["stage"]: e["summary"] for e in store.read_jsonl("audit_log.jsonl")
+                   if e.get("request_id") == "req-005"}
+        assert "Skipped" in entries["planner"] and "No model call" in entries["planner"]
+        assert "Skipped" in entries["critic"]
 
 
 class TestDemoScenarios:
@@ -100,9 +137,11 @@ class TestCritic:
         assert any(f["check"] == "commitment_coverage" for f in c["findings"])
         assert any("Churn cohort" in f["message"] for f in c["findings"])
 
-    def test_hard_locked_plan_passes_review(self, pipeline):
-        # Nothing is being sent, so there is nothing to acknowledge or flag.
-        assert pipeline.run("req-005")["critique"]["verdict"] == "pass"
+    def test_hard_locked_request_has_no_plan_to_review(self, pipeline):
+        # Not a pass: a pass means four checks ran clean. Nothing ran here.
+        c = pipeline.run("req-005")["critique"]
+        assert c["verdict"] == "not_run"
+        assert c["findings"] == [] and c["checks_run"] == []
 
     def test_offering_time_on_a_delegation_is_blocked(self, pipeline):
         r = pipeline.run("req-002")
@@ -138,14 +177,33 @@ class TestCritic:
 
 
 class TestExecution:
-    def test_approved_booking_creates_a_hold(self, pipeline):
+    def test_approved_booking_creates_a_provisional_hold(self, pipeline):
         pipeline.run("req-006")
         entry = _approval(pipeline, "appr-req-006")
         result = execute.execute(entry, pipeline.calendar)
-        assert result.action == "calendar_hold"
+        assert result.action == "provisional_hold"
         assert result.simulated is True
         assert result.event["idempotency_key"] == "maestro:appr-req-006"
         assert result.event["start"] == entry["slots"][0]["start"]
+
+    def test_hold_is_tentative_and_does_not_invite_the_requester(self, pipeline):
+        """The reply offered three times and asked her to pick one.
+
+        Booking the first option and inviting her to it would make the outbound
+        message false, so the hold is tentative and on Zeb's calendar alone.
+        """
+        pipeline.run("req-006")
+        entry = _approval(pipeline, "appr-req-006")
+        event = execute.execute(entry, pipeline.calendar).event
+
+        assert event["attendees"] == ["zeb@arcadia.com"]
+        assert entry["requester_email"] not in event["attendees"]
+        assert event["status"] == "tentative"
+        assert event["pending_confirmation"] is True
+        # Every option the reply put in front of her is on the payload.
+        assert event["offered_slots"] == [s["requester_local"] for s in entry["slots"]]
+        assert len(event["offered_slots"]) == 3
+        assert "awaiting confirmation" in event["title"].lower()
 
     def test_delegation_writes_no_calendar_event(self, pipeline):
         pipeline.run("req-002")
@@ -202,8 +260,11 @@ def _rebuild(pipeline: Pipeline, request_id: str) -> dict:
         request.proposed_start and calendarlib.in_protected_block(
             pipeline.calendar, request.proposed_start, request.requested_duration_minutes))}
     policy_result = policy.evaluate(request, dossier, pipeline.rules, derived)
-    decision, draft = planner.plan(request, dossier, policy_result, pipeline.calendar,
-                                   trust.load_state()["categories"], pipeline.voice, derived)
+    if policy_result.hard_locked:
+        decision, draft = planner.locked_plan(request, dossier, policy_result)
+    else:
+        decision, draft = planner.plan(request, dossier, policy_result, pipeline.calendar,
+                                       trust.load_state()["categories"], pipeline.voice, derived)
     return {"request": request, "dossier": dossier, "policy": policy_result,
             "decision": decision, "draft": draft}
 

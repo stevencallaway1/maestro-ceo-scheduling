@@ -111,10 +111,10 @@
         <tr><th>Request normalization</th><td class="yes">Real</td><td>Deterministic parsing of the inbound payload.</td></tr>
         <tr><th>Context dossier</th><td class="yes">Real</td><td>Assembled from the relationship and history files.</td></tr>
         <tr><th>Policy engine</th><td class="yes">Real</td><td>13 hand-editable rules, evaluated in priority order.</td></tr>
-        <tr><th>Planner</th><td class="sim">Simulated model</td><td>One model call in production. Here: deterministic templates behind the same interface.</td></tr>
-        <tr><th>Critic</th><td class="sim">Simulated model</td><td>One model call in production. The four checks it runs are real and their findings are computed, not scripted.</td></tr>
+        <tr><th>Planner</th><td class="sim">Simulated model</td><td>One model call in production. Here: deterministic templates behind the same interface. Skipped entirely on a hard-locked request, which is why those runs report zero model calls.</td></tr>
+        <tr><th>Critic</th><td class="sim">Simulated model</td><td>One model call in production. The four checks it runs are real, their findings are computed rather than scripted, and the verdict gates approval on the server: <em>block</em> cannot be approved, <em>revise</em> only with an acknowledgment.</td></tr>
         <tr><th>Approval routing</th><td class="yes">Real</td><td>Every plan queues for a human.</td></tr>
-        <tr><th>Calendar execution</th><td class="sim">Simulated adapter</td><td>Builds the exact event payload and idempotency key; makes no external API call.</td></tr>
+        <tr><th>Calendar execution</th><td class="sim">Simulated adapter</td><td>Builds the exact event payload and idempotency key; makes no external API call. A reply offering three times produces a <em>tentative</em> hold on Zeb's calendar only, with no attendees: the requester gets an invite when they pick one, not before.</td></tr>
         <tr><th>Audit &amp; trust ladder</th><td class="yes">Real</td><td>Every action logged; promotions and demotions computed from recorded verdicts.</td></tr>
       </table>
       <p class="muted small" id="persistence-note"></p>

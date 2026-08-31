@@ -12,7 +12,9 @@
     "summary": "Move Tuesday CTO 1:1 to 16:00 so board prep run-through gets a clean hour",
     "draft": "Ben - shifting our Tuesday 1:1 to 4:00pm. Board prep with Elena needs the earlier slot. Same agenda.\n\n- Z",
     "rationale": "CFO board run-through (Tue 13:00) needs buffer; CTO 1:1 is the lowest-cost move on Tuesday. Exec 1:1s are at trust level L1, so this draft waits for approval.",
-    "status": "pending"
+    "status": "pending",
+    "draft_to": "Ben Osei <ben@arcadia.com>",
+    "draft_subject": "Re: Tuesday 1:1"
   },
   {
     "id": "appr-seed-2",
@@ -27,6 +29,8 @@
     "summary": "Reply to Crestline intro request: defer to post-launch week with a concrete slot",
     "draft": "Rob - good to hear from you. Launch week has my calendar pinned down. Can do Tuesday Sep 8, 1:00pm PT. If that works, my EA will send an invite.\n\n- Z",
     "rationale": "Warm fund relationship (two prior meetings) but no active process; policy batches non-urgent investor meetings after launch week. Investor category is at L1: draft awaits approval.",
-    "status": "pending"
+    "status": "pending",
+    "draft_to": "Rob Feld <rob@crestline.vc>",
+    "draft_subject": "Re: Intro + catch-up"
   }
 ]

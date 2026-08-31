@@ -39,6 +39,11 @@ reply, and the **Critic**, which reviews them. Everything that decides, books, o
 deterministic code: normalization, context assembly, the policy engine, calendar math, approval
 routing, execution, and the audit trail.
 
+On a hard-locked topic that count is zero. The pipeline stops at the policy engine and the routing
+note is written in code, so a sensitive request is never sent to a model at all. Every call through
+the seam is logged and each run reports its own count, which makes that a number on the screen
+rather than a promise in a document.
+
 That split is the whole design. The policy engine sets the outcome, so a model cannot talk its way
 into a meeting the rules forbid. Free-slot search runs *before* the Planner, so it can only write
 about times that are provably free and cannot invent an hour that does not exist. Language is the
@@ -47,14 +52,19 @@ part that genuinely needs judgment, so language is the only part a model touches
 The Critic catches what code cannot: a reply that does not match the decision, a locked topic
 leaking into an outbound message, the wrong voice, or an unmet promise. On the board member in the
 demo, it flags that the reply never mentions a churn analysis promised two months ago and never
-sent.
+sent. Its verdict is a gate, not a label: a blocked plan cannot be approved at all, and a flagged
+one only by a human who acknowledges the findings first.
 
 ## Approvals and the record
 
 Policy is a plain-English file of 13 rules, not code, so a chief of staff can edit it without an
-engineer. Nothing is sent or booked without a human. Approving runs an idempotent calendar write;
-overriding requires a one-line reason. Every stage and every verdict lands in an append-only audit
-log. There is no path through this system that leaves no trace.
+engineer. Nothing is sent or booked without a human, and approval books only what the reply
+promised: a message offering three times places a tentative hold on the CEO's calendar and sends
+no invite, because the requester has not picked one yet. Each queue item takes exactly one human
+verdict, even under simultaneous clicks, so a double click cannot skew the metric that moves the
+trust ladder. Overriding requires
+a one-line reason. Every stage and every verdict lands in an append-only audit log. There is no
+path through this system that leaves no trace.
 
 ## Why this shape
 
@@ -68,7 +78,7 @@ is useful at L0 on day one, because a drafted reply with the reasoning already a
 
 ## What is simulated
 
-The pipeline, policy engine, trust ladder, eval loop, and audit log all run for real, under 59
+The pipeline, policy engine, trust ladder, eval loop, and audit log all run for real, under 74
 tests. Two edges are simulated and labelled in the interface: the two model calls run on
 deterministic templates behind the model interface, and the calendar adapter builds the real event
 payload and idempotency key without sending it. Production registers a Claude-backed provider and

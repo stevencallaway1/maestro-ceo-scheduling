@@ -4,7 +4,15 @@
 const $ = (sel, el = document) => el.querySelector(sel);
 const api = async (path, opts) => {
   const res = await fetch(path, opts);
-  if (!res.ok) throw new Error(`${path}: ${res.status}`);
+  if (!res.ok) {
+    // The Critic gate answers with a reason. Show it rather than a status code.
+    let detail = `${path}: ${res.status}`;
+    try {
+      const body = await res.json();
+      if (body && body.detail) detail = body.detail.message || body.detail;
+    } catch (_) { /* non-JSON error body */ }
+    throw new Error(detail);
+  }
   return res.json();
 };
 const esc = (s) =>
@@ -239,6 +247,16 @@ function fillStage(key, result) {
 
   if (key === "planner") {
     const d = result.decision;
+    if (skippedByLock(result)) {
+      status.textContent = "skipped - hard lock";
+      body.innerHTML = skippedBlock(
+        "The Planner never ran. A hard-locked request does not reach the model seam, so no "
+        + "model was asked to summarize, paraphrase, or draft around this topic. The routing "
+        + "note below is fixed text over dossier facts the pipeline already had.")
+        + `<div class="rationale"><span class="lbl">Why it stopped</span>${esc(d.rationale)}</div>`
+        + draftBlock(result);
+      return;
+    }
     status.textContent = d.outcome.replace(/_/g, " ");
     body.innerHTML = `
       <div class="outcome-line">
@@ -261,6 +279,14 @@ function fillStage(key, result) {
 
   if (key === "critique") {
     const c = result.critique;
+    if (skippedByLock(result)) {
+      status.textContent = "skipped - hard lock";
+      body.innerHTML = skippedBlock(
+        "The Critic never ran either. There is no plan to review, because none was written. "
+        + "This is recorded as <em>not_run</em> rather than <em>pass</em>: a pass means four "
+        + "checks came back clean, and here no check ran at all.");
+      return;
+    }
     status.textContent = `${c.verdict} · ${c.checks_run.length} checks`;
     body.innerHTML = `
       <div class="outcome-line">
@@ -284,25 +310,42 @@ function fillStage(key, result) {
     const d = result.decision;
     const c = result.critique;
     const booking = d.proposed_slots.length
-      ? `Hold on ${esc(d.proposed_slots[0].ceo_local)}, pending approval`
+      ? `Tentative hold on ${esc(d.proposed_slots[0].ceo_local)}, Zeb's calendar only.
+         No invite until ${esc(result.dossier.requester_name.split(" ")[0])} picks a time.`
       : "No calendar write on this outcome";
+    const gate = {
+      pass: "pass - cleared all four checks",
+      revise: "revise - approving requires acknowledging the findings first",
+      block: "block - cannot be approved as written; override is the only path",
+      not_run: "not_run - the hard lock stopped the pipeline before a plan existed",
+    }[c.verdict] || c.verdict;
     status.textContent = `queued as ${result.approval_id}`;
     body.innerHTML = `
       <dl class="kv">
         <dt>Queue item</dt><dd>${esc(result.approval_id)}</dd>
         <dt>Outcome</dt><dd>${esc(d.outcome.replace(/_/g, " "))}</dd>
-        <dt>Critic verdict</dt><dd>${esc(c.verdict)}${c.verdict === "pass" ? "" : " - a human is required regardless of trust level"}</dd>
+        <dt>Critic verdict</dt><dd>${esc(gate)}</dd>
+        <dt>Model calls</dt><dd>${(result.model_calls || []).length} of ${result.model_call_cap}${
+          skippedByLock(result) ? " - the lockout skipped both model stages" : ""}</dd>
         <dt>Autonomy</dt><dd>${esc(d.trust_level)} - ${esc(d.trust_note.split(":").slice(1).join(":").trim() || d.trust_note)}</dd>
         <dt>If approved</dt><dd>${booking}</dd>
       </dl>
       <p class="muted small stage-note">The draft above is what goes out, unchanged, once a human
-      approves it. Approving runs the calendar adapter; overriding records a reason that feeds the
-      eval loop and can demote the category. Both live on the Daily Brief panel.</p>`;
+      approves it, and it is shown again on the approval card so nobody approves a message they
+      have not read. Approving runs the calendar adapter once; overriding records a reason that
+      feeds the eval loop and can demote the category. Both live on the Daily Brief panel.</p>`;
   }
 }
 
-function draftBlock(result) {
-  const dr = result.draft;
+/* A run that never touched the model seam: the sensitive-category lockout. */
+const skippedByLock = (result) =>
+  result.banner.sensitive_lockout && (result.model_calls || []).length === 0;
+
+const skippedBlock = (why) =>
+  `<div class="skipped"><span class="skipped-tag">stage skipped</span>
+     <p>${why}</p></div>`;
+
+function emailBlock(dr, footer) {
   const internal = dr.kind === "internal_note";
   return `
     <div class="email ${internal ? "internal" : ""}">
@@ -311,9 +354,13 @@ function draftBlock(result) {
         <div><span class="lbl">Subject</span> ${esc(dr.subject)}</div>
       </div>
       <div class="email-body">${esc(dr.body)}</div>
-      <div class="email-foot">Never auto-sent. Waiting in the approval queue as
-        <strong>${esc(result.approval_id)}</strong>.</div>
+      ${footer ? `<div class="email-foot">${footer}</div>` : ""}
     </div>`;
+}
+
+function draftBlock(result) {
+  return emailBlock(result.draft, `Never auto-sent. Waiting in the approval queue as
+    <strong>${esc(result.approval_id)}</strong>.`);
 }
 
 /* =====================================================================
@@ -348,6 +395,51 @@ async function loadBrief() {
   renderApprovals(data.pending_approvals);
 }
 
+function criticBlock(a) {
+  const findings = a.critic_findings || [];
+  if (a.critic_verdict === "pass") {
+    return '<div class="a-critic ok">Critic: passed all four checks</div>';
+  }
+  if (a.critic_verdict === "not_run") {
+    return `<div class="a-critic">Critic: not run - ${esc(a.critic_summary || "")}</div>`;
+  }
+  if (!a.critic_verdict) return "";
+  // revise / block: show every finding, not just the first.
+  return `
+    <div class="a-critic ${esc(a.critic_verdict)}">
+      <div class="a-critic-head">Critic: ${esc(a.critic_verdict)} - ${esc(a.critic_summary || "")}</div>
+      <ul>${findings.map((f) => `<li><strong>${esc(f.check.replace(/_/g, " "))}:</strong> ${esc(f.message)}</li>`).join("")}</ul>
+    </div>`;
+}
+
+function approvalActions(a) {
+  if (a.critic_verdict === "block") {
+    return `
+      <div class="a-gate blocked">The Critic blocked this plan. It cannot be approved as
+        written - override it, or fix the plan and re-run.</div>
+      <div class="a-actions">
+        <button class="btn small primary act-approve" disabled>Approve</button>
+        <button class="btn small danger act-override">Override</button>
+      </div>`;
+  }
+  if (a.critic_verdict === "revise") {
+    return `
+      <label class="a-gate ack">
+        <input type="checkbox" class="ack-box" />
+        I have read the Critic's findings above and am sending this anyway.
+      </label>
+      <div class="a-actions">
+        <button class="btn small primary act-approve" disabled>Approve anyway</button>
+        <button class="btn small danger act-override">Override</button>
+      </div>`;
+  }
+  return `
+    <div class="a-actions">
+      <button class="btn small primary act-approve">Approve</button>
+      <button class="btn small danger act-override">Override</button>
+    </div>`;
+}
+
 function renderApprovals(pending) {
   const el = $("#approval-list");
   if (!pending.length) {
@@ -360,14 +452,19 @@ function renderApprovals(pending) {
     <div class="approval" data-id="${a.id}">
       <div class="a-head"><span class="a-req">${esc(a.requester)}</span><span class="chip">${esc(a.category)}</span></div>
       <div class="a-sum">${esc(a.summary)}</div>
-      ${a.critic_verdict && a.critic_verdict !== "pass"
-        ? `<div class="a-critic">Critic: ${esc(a.critic_verdict)} - ${esc((a.critic_findings || [])[0]?.message || a.critic_summary || "")}</div>`
-        : a.critic_verdict === "pass" ? '<div class="a-critic ok">Critic: passed all four checks</div>' : ""}
+      ${criticBlock(a)}
       <div class="a-rat">${esc(a.rationale)}</div>
-      <div class="a-actions">
-        <button class="btn small primary act-approve">Approve</button>
-        <button class="btn small danger act-override">Override</button>
-      </div>
+      ${emailBlock(
+        { kind: a.kind === "internal_note" ? "internal_note" : "external_reply",
+          to: a.draft_to || a.requester,
+          subject: a.draft_subject || a.summary,
+          body: a.draft || "" },
+        a.slots && a.slots.length
+          ? `Approving sends this and places a tentative hold on Zeb's calendar only.
+             ${esc(a.requester.split(" ")[0])} gets no invite until they pick one of the
+             ${a.slots.length} times offered above.`
+          : "Approving sends this. No calendar write on this outcome.")}
+      ${approvalActions(a)}
       <div class="override-box hidden">
         <input type="text" placeholder="One-line reason (required - this trains the trust ladder)" />
         <button class="btn small danger act-confirm">Confirm</button>
@@ -378,37 +475,69 @@ function renderApprovals(pending) {
 
   el.querySelectorAll(".approval").forEach((card) => {
     const id = card.dataset.id;
-    $(".act-approve", card).addEventListener("click", async () => {
-      const res = await api(`/api/approvals/${id}/approve`, { method: "POST" });
-      const ex = res.execution;
-      toast(ex.action === "calendar_hold"
-        ? `Approved. Calendar adapter (simulated): ${ex.summary}`
-        : `Approved. ${ex.summary}`);
-      loadBrief();
+    const approveBtn = $(".act-approve", card);
+    const ack = $(".ack-box", card);
+
+    // A "revise" plan stays unapprovable until the findings are acknowledged.
+    if (ack) {
+      ack.addEventListener("change", () => { approveBtn.disabled = !ack.checked; });
+    }
+
+    approveBtn.addEventListener("click", async () => {
+      approveBtn.disabled = true;
+      try {
+        const res = await api(`/api/approvals/${id}/approve`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ acknowledge_critic: Boolean(ack && ack.checked) }),
+        });
+        if (res.idempotent) {
+          toast(res.detail);
+        } else {
+          const ex = res.execution;
+          toast(ex.action === "provisional_hold"
+            ? `Approved. Calendar adapter (simulated): ${ex.summary}`
+            : `Approved. ${ex.summary}`);
+        }
+        loadBrief();
+      } catch (err) {
+        toast(err.message, true);
+        approveBtn.disabled = Boolean(ack) && !ack.checked;
+      }
     });
+
     $(".act-override", card).addEventListener("click", () => {
       $(".override-box", card).classList.toggle("hidden");
-      $("input", card).focus();
+      $(".override-box input", card).focus();
     });
     const confirm = async () => {
-      const reason = $("input", card).value.trim();
-      if (!reason) { $("input", card).focus(); return; }
-      const res = await api(`/api/approvals/${id}/override`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reason }),
-      });
-      if (res.demotion) {
-        toast(`Critical miss. Automatic demotion: ${res.approval.category} ${res.demotion.from} → ${res.demotion.to}. See the Trust panel.`, true);
-      } else if (res.critical_miss) {
-        toast("Override recorded as a critical miss. Trust metrics updated.", true);
-      } else {
-        toast("Override recorded. The eval loop picks this up on the Trust panel.");
+      const box = $(".override-box", card);
+      const reason = $("input", box).value.trim();
+      if (!reason) { $("input", box).focus(); return; }
+      $(".act-confirm", card).disabled = true;
+      try {
+        const res = await api(`/api/approvals/${id}/override`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reason }),
+        });
+        if (res.idempotent) {
+          toast(res.detail);
+        } else if (res.demotion) {
+          toast(`Critical miss. Automatic demotion: ${res.approval.category} ${res.demotion.from} \u2192 ${res.demotion.to}. See the Trust panel.`, true);
+        } else if (res.critical_miss) {
+          toast("Override recorded as a critical miss. Trust metrics updated.", true);
+        } else {
+          toast("Override recorded. The eval loop picks this up on the Trust panel.");
+        }
+        loadBrief();
+      } catch (err) {
+        toast(err.message, true);
+        $(".act-confirm", card).disabled = false;
       }
-      loadBrief();
     };
     $(".act-confirm", card).addEventListener("click", confirm);
-    $("input", card).addEventListener("keydown", (e) => { if (e.key === "Enter") confirm(); });
+    $(".override-box input", card).addEventListener("keydown", (e) => { if (e.key === "Enter") confirm(); });
   });
 }
 
