@@ -31,18 +31,56 @@ function toast(msg, bad = false) {
   el.classList.toggle("bad", bad);
   el.classList.remove("hidden");
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.add("hidden"), 4200);
+  toastTimer = setTimeout(() => el.classList.add("hidden"), 4600);
 }
+
+/* ---------- "what runs for real" modal ---------- */
+$("#mode-more").addEventListener("click", (e) => {
+  e.preventDefault();
+  $("#mode-modal").classList.remove("hidden");
+});
+$("#mode-close").addEventListener("click", () => $("#mode-modal").classList.add("hidden"));
+$("#mode-modal").addEventListener("click", (e) => {
+  if (e.target.id === "mode-modal") $("#mode-modal").classList.add("hidden");
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") $("#mode-modal").classList.add("hidden");
+});
+
+/* ---------- reset ---------- */
+$("#reset-btn").addEventListener("click", async () => {
+  const btn = $("#reset-btn");
+  btn.disabled = true;
+  try {
+    await api("/api/reset", { method: "POST" });
+    selectedRequest = null;
+    $("#run-btn").disabled = true;
+    $("#flow-title").textContent = "Select a request";
+    $("#flow-sub").textContent = "Pick an item from the inbox, then run it through the pipeline.";
+    $("#lockout-banner").classList.add("hidden");
+    document.querySelectorAll(".req-card").forEach((c) => c.classList.remove("selected"));
+    renderEmptyStages();
+    const active = $(".tab.active").dataset.panel;
+    if (active === "brief") loadBrief();
+    if (active === "trust") loadTrust();
+    toast("Demo state restored. Every panel is back to its seeded starting point.");
+  } catch (err) {
+    toast(`Reset failed: ${err.message}`, true);
+  } finally {
+    btn.disabled = false;
+  }
+});
 
 /* =====================================================================
    Panel 1 - Request Pipeline
    ===================================================================== */
 const STAGES = [
-  { key: "request", title: "Intake", desc: "Parse the raw request into a structured object" },
-  { key: "dossier", title: "Context Dossier", desc: "Who is this to Zeb? No decision without a dossier" },
-  { key: "policy", title: "Policy Engine", desc: "Which rules fire, and which one decides" },
-  { key: "decision", title: "Decision", desc: "Outcome, slots, and the written rationale" },
-  { key: "draft", title: "Draft", desc: "CEO-voice reply - never auto-sent" },
+  { key: "request", title: "Intake", kind: "det", desc: "Normalize the raw request into a structured object" },
+  { key: "dossier", title: "Context Dossier", kind: "det", desc: "Who is this to Zeb? No decision without a dossier" },
+  { key: "policy", title: "Policy Engine", kind: "det", desc: "Which rules fire, and which one decides" },
+  { key: "planner", title: "Planner", kind: "model", desc: "The decision, its rationale, and the reply draft" },
+  { key: "critique", title: "Critic", kind: "model", desc: "Reviews the plan before a human ever sees it" },
+  { key: "approval", title: "Approval routing", kind: "det", desc: "Queued for a human - never auto-sent" },
 ];
 
 let selectedRequest = null;
@@ -84,7 +122,9 @@ function renderEmptyStages() {
     <div class="stage" id="stage-${s.key}">
       <div class="stage-head">
         <div class="stage-num">${i + 1}</div>
-        <div class="stage-title">${s.title}</div>
+        <div class="stage-title">${s.title}
+          <span class="kind ${s.kind}">${s.kind === "model" ? "model-backed" : "deterministic"}</span>
+        </div>
         <div class="stage-status">${s.desc}</div>
       </div>
       <div class="stage-body"></div>
@@ -101,16 +141,15 @@ $("#run-btn").addEventListener("click", async () => {
   $("#run-btn").disabled = true;
   $("#lockout-banner").classList.add("hidden");
   renderEmptyStages();
-  const instant = $("#instant-toggle").checked;
-  const delay = instant ? 0 : 800;
+  const delay = $("#instant-toggle").checked ? 0 : 700;
   try {
     const result = await api(`/api/pipeline/run/${selectedRequest.id}`, { method: "POST" });
     for (let i = 0; i < STAGES.length; i++) {
       const stage = $(`#stage-${STAGES[i].key}`);
       stage.classList.add("running");
       if (delay) await new Promise((r) => setTimeout(r, delay));
-      // The lockout banner drops the moment policy resolves.
-      if (STAGES[i].key === "decision" && result.banner.sensitive_lockout) {
+      // The lockout banner drops the moment the policy engine resolves.
+      if (STAGES[i].key === "policy" && result.banner.sensitive_lockout) {
         const b = $("#lockout-banner");
         b.textContent = result.banner.text;
         b.classList.remove("hidden");
@@ -119,7 +158,7 @@ $("#run-btn").addEventListener("click", async () => {
       stage.classList.remove("running");
       stage.classList.add("done", "open");
     }
-    toast("Pipeline complete - draft queued for approval (see Daily Brief).");
+    toast("Pipeline complete. The plan is queued for approval on the Daily Brief panel.");
   } catch (err) {
     toast(`Pipeline error: ${err.message}`, true);
   } finally {
@@ -131,6 +170,7 @@ $("#run-btn").addEventListener("click", async () => {
 function fillStage(key, result) {
   const body = $(`#stage-${key} .stage-body`);
   const status = $(`#stage-${key} .stage-status`);
+
   if (key === "request") {
     const r = result.request;
     status.textContent = `${r.meeting_type} · ${r.requested_duration_minutes} min · urgency ${r.urgency}`;
@@ -146,11 +186,12 @@ function fillStage(key, result) {
       </dl>
       <div class="raw">${esc(r.raw_source_text)}</div>`;
   }
+
   if (key === "dossier") {
     const d = result.dossier;
     status.textContent = `relevance ${d.strategic_relevance}/100${d.vip ? " · VIP" : ""}${d.sensitive_category ? " · SENSITIVE" : ""}`;
     body.innerHTML = `
-      <p style="font-size:14px">${esc(d.relationship_summary)}</p>
+      <p class="lede">${esc(d.relationship_summary)}</p>
       <div class="dossier-section">
         <h4>Strategic relevance</h4>
         <div class="meter">
@@ -179,6 +220,7 @@ function fillStage(key, result) {
         <ul class="thread-list">${d.open_threads.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>
       </div>` : ""}`;
   }
+
   if (key === "policy") {
     const p = result.policy;
     status.textContent = `${p.fired_rules.length} rules fired · decided by ${p.deciding_rule_id}`;
@@ -192,9 +234,10 @@ function fillStage(key, result) {
       </div>`
       )
       .join("") +
-      `<p class="muted small" style="margin-top:8px">Evaluated in priority order. The first decisive match sets the outcome; "constrain" rules shape slot selection.</p>`;
+      `<p class="muted small stage-note">Evaluated in priority order. The first decisive match sets the outcome; "constrain" rules shape which slots are legal.</p>`;
   }
-  if (key === "decision") {
+
+  if (key === "planner") {
     const d = result.decision;
     status.textContent = d.outcome.replace(/_/g, " ");
     body.innerHTML = `
@@ -204,28 +247,73 @@ function fillStage(key, result) {
         <span class="muted small">${esc(d.trust_note)}</span>
       </div>
       <div class="rationale"><span class="lbl">Rationale</span>${esc(d.rationale)}</div>
-      ${d.delegate_to ? `<p style="font-size:13.5px"><strong>Delegated to:</strong> ${esc(d.delegate_to)}</p>` : ""}
-      ${d.route_to.length ? `<p style="font-size:13.5px"><strong>Routed to:</strong> ${esc(d.route_to.join(", "))}</p>` : ""}
+      ${d.delegate_to ? `<p class="stage-line"><strong>Delegated to:</strong> ${esc(d.delegate_to)}</p>` : ""}
+      ${d.route_to.length ? `<p class="stage-line"><strong>Routed to:</strong> ${esc(d.route_to.join(", "))}</p>` : ""}
       ${d.proposed_slots.length ? `
         <div class="dossier-section"><h4>Proposed slots (requester-local shown first)</h4>
         ${d.proposed_slots.map((s) => `
           <div class="slot"><span class="req-tz">${esc(s.requester_local)}</span>
-          <span class="ceo-tz">${esc(s.ceo_local)} for Zeb</span></div>`).join("")}</div>` : ""}`;
+          <span class="ceo-tz">${esc(s.ceo_local)} for Zeb</span></div>`).join("")}
+        <p class="muted small stage-note">Times come from deterministic calendar math, not the model. Only slots that are provably free and policy-clean reach the Planner.</p>
+        </div>` : ""}
+      ${draftBlock(result)}`;
   }
-  if (key === "draft") {
-    const dr = result.draft;
-    const internal = dr.kind === "internal_note";
-    status.textContent = internal ? "internal routing note" : "external reply, queued";
+
+  if (key === "critique") {
+    const c = result.critique;
+    status.textContent = `${c.verdict} · ${c.checks_run.length} checks`;
     body.innerHTML = `
-      <div class="email ${internal ? "internal" : ""}">
-        <div class="email-head">
-          <div><span class="lbl">To</span> ${esc(dr.to)}</div>
-          <div><span class="lbl">Subject</span> ${esc(dr.subject)}</div>
-        </div>
-        <div class="email-body">${esc(dr.body)}</div>
-        <div class="email-foot">✋ Never auto-sent - waiting in the approval queue as <strong>${esc(result.approval_id)}</strong>. Approve or override it on the Daily Brief panel.</div>
-      </div>`;
+      <div class="outcome-line">
+        <span class="verdict-badge ${c.verdict}">${c.verdict === "pass" ? "passed review" : c.verdict}</span>
+        <span class="muted small">${esc(c.summary)}</span>
+      </div>
+      <div class="check-row">${c.checks_run.map((name) => {
+        const hit = c.findings.some((f) => f.check === name);
+        return `<span class="check ${hit ? "hit" : "ok"}">${hit ? "!" : "✓"} ${esc(name.replace(/_/g, " "))}</span>`;
+      }).join("")}</div>
+      ${c.findings.length ? c.findings.map((f) => `
+        <div class="finding ${esc(f.severity)}">
+          <span class="f-sev">${esc(f.severity)}</span>
+          <span class="f-msg">${esc(f.message)}</span>
+        </div>`).join("")
+        : `<p class="muted small stage-note">Nothing to flag. The reply matches the decision, keeps the sensitive rules, sounds like Zeb, and covers what he owes this person.</p>`}
+      <p class="muted small stage-note">Anything other than <em>pass</em> requires a human regardless of trust level, and is the gate that governs autonomy as categories climb the ladder.</p>`;
   }
+
+  if (key === "approval") {
+    const d = result.decision;
+    const c = result.critique;
+    const booking = d.proposed_slots.length
+      ? `Hold on ${esc(d.proposed_slots[0].ceo_local)}, pending approval`
+      : "No calendar write on this outcome";
+    status.textContent = `queued as ${result.approval_id}`;
+    body.innerHTML = `
+      <dl class="kv">
+        <dt>Queue item</dt><dd>${esc(result.approval_id)}</dd>
+        <dt>Outcome</dt><dd>${esc(d.outcome.replace(/_/g, " "))}</dd>
+        <dt>Critic verdict</dt><dd>${esc(c.verdict)}${c.verdict === "pass" ? "" : " - a human is required regardless of trust level"}</dd>
+        <dt>Autonomy</dt><dd>${esc(d.trust_level)} - ${esc(d.trust_note.split(":").slice(1).join(":").trim() || d.trust_note)}</dd>
+        <dt>If approved</dt><dd>${booking}</dd>
+      </dl>
+      <p class="muted small stage-note">The draft above is what goes out, unchanged, once a human
+      approves it. Approving runs the calendar adapter; overriding records a reason that feeds the
+      eval loop and can demote the category. Both live on the Daily Brief panel.</p>`;
+  }
+}
+
+function draftBlock(result) {
+  const dr = result.draft;
+  const internal = dr.kind === "internal_note";
+  return `
+    <div class="email ${internal ? "internal" : ""}">
+      <div class="email-head">
+        <div><span class="lbl">To</span> ${esc(dr.to)}</div>
+        <div><span class="lbl">Subject</span> ${esc(dr.subject)}</div>
+      </div>
+      <div class="email-body">${esc(dr.body)}</div>
+      <div class="email-foot">Never auto-sent. Waiting in the approval queue as
+        <strong>${esc(result.approval_id)}</strong>.</div>
+    </div>`;
 }
 
 /* =====================================================================
@@ -263,7 +351,7 @@ async function loadBrief() {
 function renderApprovals(pending) {
   const el = $("#approval-list");
   if (!pending.length) {
-    el.innerHTML = '<p class="muted small" style="margin-top:12px">Queue is clear. Run a request through the pipeline to add one.</p>';
+    el.innerHTML = '<p class="muted small empty">Queue is clear. Run a request through the pipeline to add one.</p>';
     return;
   }
   el.innerHTML = pending
@@ -272,6 +360,9 @@ function renderApprovals(pending) {
     <div class="approval" data-id="${a.id}">
       <div class="a-head"><span class="a-req">${esc(a.requester)}</span><span class="chip">${esc(a.category)}</span></div>
       <div class="a-sum">${esc(a.summary)}</div>
+      ${a.critic_verdict && a.critic_verdict !== "pass"
+        ? `<div class="a-critic">Critic: ${esc(a.critic_verdict)} - ${esc((a.critic_findings || [])[0]?.message || a.critic_summary || "")}</div>`
+        : a.critic_verdict === "pass" ? '<div class="a-critic ok">Critic: passed all four checks</div>' : ""}
       <div class="a-rat">${esc(a.rationale)}</div>
       <div class="a-actions">
         <button class="btn small primary act-approve">Approve</button>
@@ -288,8 +379,11 @@ function renderApprovals(pending) {
   el.querySelectorAll(".approval").forEach((card) => {
     const id = card.dataset.id;
     $(".act-approve", card).addEventListener("click", async () => {
-      await api(`/api/approvals/${id}/approve`, { method: "POST" });
-      toast("Approved. Recorded in overrides.json - acceptance metrics update on the Trust panel.");
+      const res = await api(`/api/approvals/${id}/approve`, { method: "POST" });
+      const ex = res.execution;
+      toast(ex.action === "calendar_hold"
+        ? `Approved. Calendar adapter (simulated): ${ex.summary}`
+        : `Approved. ${ex.summary}`);
       loadBrief();
     });
     $(".act-override", card).addEventListener("click", () => {
@@ -305,11 +399,11 @@ function renderApprovals(pending) {
         body: JSON.stringify({ reason }),
       });
       if (res.demotion) {
-        toast(`Critical miss - automatic demotion: ${res.approval.category} ${res.demotion.from} → ${res.demotion.to}. See Trust panel.`, true);
+        toast(`Critical miss. Automatic demotion: ${res.approval.category} ${res.demotion.from} → ${res.demotion.to}. See the Trust panel.`, true);
       } else if (res.critical_miss) {
         toast("Override recorded as a critical miss. Trust metrics updated.", true);
       } else {
-        toast("Override recorded - the eval loop learns from this on the Trust panel.");
+        toast("Override recorded. The eval loop picks this up on the Trust panel.");
       }
       loadBrief();
     };
@@ -349,7 +443,7 @@ async function loadTrust() {
           <div class="lvl-steps">${LEVELS.map((l) =>
             `<span class="lvl ${LEVELS.indexOf(l) <= LEVELS.indexOf(row.level) ? "on" : ""}">${l}</span>`).join("")}</div>
           <div class="spacer"></div>
-          ${row.locked ? '<span class="lock-chip">🔒 HARD-LOCKED L0</span>' : ""}
+          ${row.locked ? '<span class="lock-chip">hard-locked L0</span>' : ""}
         </div>
         <div class="ladder-progress">
           <div class="meter-track"><div class="meter-fill" style="width:${row.progress_pct}%"></div></div>
@@ -371,7 +465,7 @@ async function loadTrust() {
       <span class="vd">${esc(o.date)}</span>
       <span class="vs">${esc(o.summary)} <span class="chip">${esc(o.category)}</span>
         ${o.reason ? `<div class="vr">"${esc(o.reason)}"</div>` : ""}</span>
-      <span class="va ${o.human_action === "approved" ? "ok" : "no"}">${esc(o.human_action)}${o.critical_miss ? " ⚠" : ""}</span>
+      <span class="va ${o.human_action === "approved" ? "ok" : "no"}">${esc(o.human_action)}${o.critical_miss ? " · critical" : ""}</span>
     </div>`
     )
     .join("");
@@ -391,3 +485,9 @@ async function loadTrust() {
 /* ---------- boot ---------- */
 loadInbox();
 renderEmptyStages();
+api("/api/status").then((s) => {
+  $("#persistence-note").textContent =
+    s.state_persistence === "memory"
+      ? "State on this deployment lives in memory: your run is real and fully interactive, and it resets on a cold start or when you press Reset demo."
+      : "State persists to the JSON files in /data. Press Reset demo to restore the seeded starting point.";
+}).catch(() => {});

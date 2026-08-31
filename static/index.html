@@ -21,7 +21,20 @@
       <button class="tab" data-panel="brief">Daily Brief</button>
       <button class="tab" data-panel="trust">Trust &amp; Audit</button>
     </nav>
+    <div class="topbar-right">
+      <a class="btn ghost" href="/static/architecture.svg" target="_blank" rel="noopener">Architecture</a>
+      <button class="btn ghost" id="reset-btn" title="Restore the seeded demo state">Reset demo</button>
+    </div>
   </header>
+
+  <div class="mode-bar">
+    <span class="mode-dot"></span>
+    <span><strong>Working demo, simulated edges.</strong> The pipeline, policy engine, trust ladder
+    and audit log all run for real. The two model-backed stages run on deterministic templates
+    behind the model seam, and the calendar adapter builds the event payload without calling an
+    external calendar.</span>
+    <a href="#" id="mode-more">What runs for real</a>
+  </div>
 
   <main>
     <!-- Panel 1: Request Pipeline -->
@@ -33,6 +46,7 @@
             <span class="muted" id="inbox-count"></span>
           </div>
           <div id="inbox-list"></div>
+          <p class="muted small hint">Start with Dana Whitfield, then Jordan Ellis.</p>
         </aside>
         <div class="flow">
           <div class="flow-head">
@@ -55,12 +69,13 @@
     <section id="panel-brief" class="panel">
       <div class="brief-grid">
         <article class="card brief-doc">
-          <div id="brief-md" class="markdown">Loading…</div>
+          <div id="brief-md" class="markdown">Loading the brief…</div>
         </article>
         <aside class="brief-side">
           <div class="card">
             <h3>Approval queue</h3>
-            <p class="muted small">Nothing Maestro drafts is ever sent without a human. Approve or override - overrides feed the eval loop.</p>
+            <p class="muted small">Nothing is sent or booked without a human. Approving runs the
+            calendar adapter; overriding records a reason that feeds the trust ladder.</p>
             <div id="approval-list"></div>
           </div>
         </aside>
@@ -88,6 +103,24 @@
       </div>
     </section>
   </main>
+
+  <div id="mode-modal" class="modal hidden">
+    <div class="modal-card">
+      <h3>What runs for real</h3>
+      <table class="real-table">
+        <tr><th>Request normalization</th><td class="yes">Real</td><td>Deterministic parsing of the inbound payload.</td></tr>
+        <tr><th>Context dossier</th><td class="yes">Real</td><td>Assembled from the relationship and history files.</td></tr>
+        <tr><th>Policy engine</th><td class="yes">Real</td><td>13 hand-editable rules, evaluated in priority order.</td></tr>
+        <tr><th>Planner</th><td class="sim">Simulated model</td><td>One model call in production. Here: deterministic templates behind the same interface.</td></tr>
+        <tr><th>Critic</th><td class="sim">Simulated model</td><td>One model call in production. The four checks it runs are real and their findings are computed, not scripted.</td></tr>
+        <tr><th>Approval routing</th><td class="yes">Real</td><td>Every plan queues for a human.</td></tr>
+        <tr><th>Calendar execution</th><td class="sim">Simulated adapter</td><td>Builds the exact event payload and idempotency key; makes no external API call.</td></tr>
+        <tr><th>Audit &amp; trust ladder</th><td class="yes">Real</td><td>Every action logged; promotions and demotions computed from recorded verdicts.</td></tr>
+      </table>
+      <p class="muted small" id="persistence-note"></p>
+      <button class="btn primary" id="mode-close">Close</button>
+    </div>
+  </div>
 
   <div id="toast" class="toast hidden"></div>
   <script src="/static/app.js"></script>

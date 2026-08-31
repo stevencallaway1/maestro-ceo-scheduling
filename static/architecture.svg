@@ -1,0 +1,192 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1580 800" width="1580" height="800" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <style>
+    .t     { font-size: 31px; font-weight: 700; fill: #17181c; letter-spacing: -0.5px; }
+    .sub   { font-size: 15px; fill: #5c5e66; }
+    .lg    { font-size: 12.5px; fill: #5c5e66; }
+    .bt    { font-size: 15.5px; font-weight: 650; fill: #17181c; }
+    .bn    { font-size: 11.5px; fill: #5c5e66; }
+    .bnum  { font-size: 11px; font-weight: 700; fill: #9a9ca4; letter-spacing: .08em; }
+    .feed  { font-size: 11.5px; fill: #7a7c84; }
+    .feedb { font-size: 11.5px; fill: #7a7c84; font-weight: 600; }
+    .band  { font-size: 14.5px; font-weight: 650; fill: #17181c; }
+    .bandn { font-size: 11.5px; fill: #5c5e66; }
+    .note  { font-size: 12.5px; fill: #7a7c84; }
+  </style>
+
+  <rect width="1580" height="800" fill="#ffffff"/>
+
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#b6b4ad"/>
+    </marker>
+    <marker id="arrowLoop" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#4f46e5"/>
+    </marker>
+    <marker id="arrowThin" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#c4c2bb"/>
+    </marker>
+    <marker id="arrowRed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#b3261e"/>
+    </marker>
+  </defs>
+
+  <!-- ── Header ─────────────────────────────────────────────────────── -->
+  <text x="60" y="56" class="t">Maestro</text>
+  <text x="185" y="56" class="sub">AI scheduling for the Office of the CEO</text>
+  <text x="60" y="84" class="sub">One request, end to end. Two of the six stages call a model, once each. Everything that decides, books, or records is deterministic.</text>
+
+  <!-- ── Legend ─────────────────────────────────────────────────────── -->
+  <g transform="translate(60,112)">
+    <rect x="0" y="0" width="15" height="15" rx="4" fill="#ffffff" stroke="#d7d5cf" stroke-width="1.5"/>
+    <text x="23" y="12" class="lg">Deterministic code</text>
+    <rect x="175" y="0" width="15" height="15" rx="4" fill="#eeedfc" stroke="#4f46e5" stroke-width="1.5"/>
+    <text x="198" y="12" class="lg">Model-backed (one call)</text>
+    <rect x="382" y="0" width="15" height="15" rx="4" fill="#fdf3d7" stroke="#9a6700" stroke-width="1.5"/>
+    <text x="405" y="12" class="lg">Human decision point</text>
+    <rect x="579" y="0" width="15" height="15" rx="4" fill="#f4f3f0" stroke="#b6b4ad" stroke-width="1.5" stroke-dasharray="4 3"/>
+    <text x="602" y="12" class="lg">External system / adapter</text>
+  </g>
+
+  <!-- ── Inputs ─────────────────────────────────────────────────────── -->
+  <g>
+    <text x="516" y="200" class="feedb" text-anchor="middle">people.json · history.json</text>
+    <text x="516" y="217" class="feed" text-anchor="middle">relationship, flags, open threads</text>
+    <path d="M 516 228 L 516 306" stroke="#c4c2bb" stroke-width="1.4" marker-end="url(#arrowThin)"/>
+
+    <text x="705" y="200" class="feedb" text-anchor="middle">policies.json</text>
+    <text x="705" y="217" class="feed" text-anchor="middle">13 hand-editable rules</text>
+    <path d="M 705 228 L 705 306" stroke="#c4c2bb" stroke-width="1.4" marker-end="url(#arrowThin)"/>
+
+    <text x="894" y="200" class="feedb" text-anchor="middle">calendar.json · voice.json</text>
+    <text x="894" y="217" class="feed" text-anchor="middle">free-slot search runs first</text>
+    <path d="M 894 228 L 894 306" stroke="#c4c2bb" stroke-width="1.4" marker-end="url(#arrowThin)"/>
+  </g>
+
+  <!-- ── Sensitive-category bypass (hops over the calendar feed) ────── -->
+  <g>
+    <path d="M 760 306 L 760 272 L 884 272" stroke="#b3261e" stroke-width="1.6" fill="none" stroke-dasharray="6 4"/>
+    <rect x="885" y="265" width="19" height="14" fill="#ffffff"/>
+    <path d="M 904 272 L 1300 272 L 1300 306" stroke="#b3261e" stroke-width="1.6" fill="none"
+          stroke-dasharray="6 4" marker-end="url(#arrowRed)"/>
+    <text x="1100" y="260" class="lg" fill="#b3261e" text-anchor="middle">Sensitive category: skips both model stages, straight to a human</text>
+  </g>
+
+  <!-- ── Main flow ──────────────────────────────────────────────────── -->
+  <g>
+    <rect x="60" y="312" width="155" height="132" rx="10" fill="#f4f3f0" stroke="#b6b4ad" stroke-width="1.5" stroke-dasharray="5 4"/>
+    <text x="76" y="337" class="bnum">REQUEST</text>
+    <text x="76" y="362" class="bt">Inbound ask</text>
+    <text x="76" y="387" class="bn">Email</text>
+    <text x="76" y="405" class="bn">Slack</text>
+    <text x="76" y="423" class="bn">ClickUp task</text>
+  </g>
+  <path d="M 219 378 L 245 378" stroke="#b6b4ad" stroke-width="1.8" marker-end="url(#arrow)"/>
+
+  <g>
+    <rect x="249" y="312" width="155" height="132" rx="10" fill="#ffffff" stroke="#d7d5cf" stroke-width="1.5"/>
+    <text x="265" y="337" class="bnum">1 · INTAKE</text>
+    <text x="265" y="362" class="bt">Normalize</text>
+    <text x="265" y="387" class="bn">Type, duration,</text>
+    <text x="265" y="405" class="bn">urgency, channel.</text>
+    <text x="265" y="423" class="bn">Decides nothing.</text>
+  </g>
+  <path d="M 408 378 L 434 378" stroke="#b6b4ad" stroke-width="1.8" marker-end="url(#arrow)"/>
+
+  <g>
+    <rect x="438" y="312" width="155" height="132" rx="10" fill="#ffffff" stroke="#d7d5cf" stroke-width="1.5"/>
+    <text x="454" y="337" class="bnum">2 · CONTEXT</text>
+    <text x="454" y="362" class="bt">Dossier</text>
+    <text x="454" y="387" class="bn">Who this is to Zeb:</text>
+    <text x="454" y="405" class="bn">relevance, VIP,</text>
+    <text x="454" y="423" class="bn">sensitivity, history.</text>
+  </g>
+  <path d="M 597 378 L 623 378" stroke="#b6b4ad" stroke-width="1.8" marker-end="url(#arrow)"/>
+
+  <g>
+    <rect x="627" y="312" width="155" height="132" rx="10" fill="#ffffff" stroke="#d7d5cf" stroke-width="1.5"/>
+    <text x="643" y="337" class="bnum">3 · POLICY</text>
+    <text x="643" y="362" class="bt">Rule engine</text>
+    <text x="643" y="387" class="bn">Sets the outcome and</text>
+    <text x="643" y="405" class="bn">the slot constraints.</text>
+    <text x="643" y="423" class="bn">Sensitive = hard lock.</text>
+  </g>
+  <path d="M 786 378 L 812 378" stroke="#b6b4ad" stroke-width="1.8" marker-end="url(#arrow)"/>
+
+  <g>
+    <rect x="816" y="312" width="155" height="132" rx="10" fill="#eeedfc" stroke="#4f46e5" stroke-width="1.8"/>
+    <text x="832" y="337" class="bnum" fill="#4f46e5">4 · PLANNER</text>
+    <text x="832" y="362" class="bt">Writes the plan</text>
+    <text x="832" y="387" class="bn">Rationale and reply in</text>
+    <text x="832" y="405" class="bn">the CEO's voice. Picks</text>
+    <text x="832" y="423" class="bn">from legal slots only.</text>
+  </g>
+  <path d="M 975 378 L 1001 378" stroke="#b6b4ad" stroke-width="1.8" marker-end="url(#arrow)"/>
+
+  <g>
+    <rect x="1005" y="312" width="155" height="132" rx="10" fill="#eeedfc" stroke="#4f46e5" stroke-width="1.8"/>
+    <text x="1021" y="337" class="bnum" fill="#4f46e5">5 · CRITIC</text>
+    <text x="1021" y="362" class="bt">Reviews it</text>
+    <text x="1021" y="387" class="bn">Decision match, leaks,</text>
+    <text x="1021" y="405" class="bn">voice, unmet promises.</text>
+    <text x="1021" y="423" class="bn">pass / revise / block</text>
+  </g>
+  <path d="M 1164 378 L 1190 378" stroke="#b6b4ad" stroke-width="1.8" marker-end="url(#arrow)"/>
+
+  <g>
+    <rect x="1194" y="312" width="155" height="132" rx="10" fill="#fdf3d7" stroke="#9a6700" stroke-width="1.8"/>
+    <text x="1210" y="337" class="bnum" fill="#9a6700">6 · APPROVAL</text>
+    <text x="1210" y="362" class="bt">Human decides</text>
+    <text x="1210" y="387" class="bn">Approve, or override</text>
+    <text x="1210" y="405" class="bn">with a reason.</text>
+    <text x="1210" y="423" class="bn">Nothing skips this.</text>
+  </g>
+  <path d="M 1353 378 L 1379 378" stroke="#b6b4ad" stroke-width="1.8" marker-end="url(#arrow)"/>
+
+  <g>
+    <rect x="1383" y="312" width="155" height="132" rx="10" fill="#f4f3f0" stroke="#b6b4ad" stroke-width="1.5" stroke-dasharray="5 4"/>
+    <text x="1399" y="337" class="bnum">EXECUTION</text>
+    <text x="1399" y="362" class="bt">Calendar</text>
+    <text x="1399" y="387" class="bn">Idempotent hold, or</text>
+    <text x="1399" y="405" class="bn">route with no write.</text>
+    <text x="1399" y="423" class="bn" fill="#9a6700">Simulated in the demo.</text>
+  </g>
+
+  <!-- ── Everything drops into the record ───────────────────────────── -->
+  <g stroke="#d3d1ca" stroke-width="1.2" stroke-dasharray="3 4">
+    <path d="M 326 448 L 326 584"/>
+    <path d="M 516 448 L 516 584"/>
+    <path d="M 705 448 L 705 584"/>
+    <path d="M 894 448 L 894 584"/>
+    <path d="M 1083 448 L 1083 584"/>
+    <path d="M 1271 448 L 1271 584"/>
+    <path d="M 1461 448 L 1461 584"/>
+  </g>
+
+  <!-- ── Record + learning band ─────────────────────────────────────── -->
+  <g>
+    <rect x="249" y="588" width="1289" height="112" rx="10" fill="#ffffff" stroke="#d7d5cf" stroke-width="1.5"/>
+    <path d="M 1000 588 L 1000 700" stroke="#e7e5de" stroke-width="1.5"/>
+
+    <text x="277" y="618" class="band">Audit log</text>
+    <text x="277" y="642" class="bandn">Append-only. Every stage, every human verdict, and every</text>
+    <text x="277" y="660" class="bandn">calendar write, timestamped and attributed. Nothing that</text>
+    <text x="277" y="678" class="bandn">happens here happens off the record.</text>
+
+    <text x="1028" y="618" class="band">Trust ladder &amp; eval loop</text>
+    <text x="1028" y="642" class="bandn">Approvals and overrides are scored per category. L0 suggest-only through L3 bounded</text>
+    <text x="1028" y="660" class="bandn">negotiation: promotion is earned from measured acceptance, demotion is automatic on any</text>
+    <text x="1028" y="678" class="bandn">critical miss, and sensitive categories are locked at L0 permanently.</text>
+  </g>
+
+  <!-- ── The loop back into the plan ────────────────────────────────── -->
+  <g>
+    <path d="M 1010 584 L 1010 478 L 930 478 L 930 452"
+          stroke="#4f46e5" stroke-width="1.6" fill="none" marker-end="url(#arrowLoop)"/>
+    <rect x="700" y="470" width="222" height="18" fill="#ffffff"/>
+    <text x="918" y="484" class="lg" fill="#4f46e5" text-anchor="end">sets how much autonomy this category gets</text>
+  </g>
+
+  <!-- ── Footer ─────────────────────────────────────────────────────── -->
+  <text x="60" y="754" class="note">Model calls are capped at two per request, both structured, both behind one interface. The Planner never invents a time: free-slot search runs first, so it can only write</text>
+  <text x="60" y="774" class="note">about slots that are provably legal. In this build both model stages run on deterministic templates, and the calendar adapter builds its event payload without sending it.</text>
+</svg>
