@@ -64,8 +64,7 @@ without an explanation. One incident like that ends the project.
 
 Maestro is built for that failure mode. It starts with almost no authority, earns more only where
 it has a measured record, and structurally excludes the topics where a mistake is unrecoverable. It
-is useful at L0 on day one, because a drafted reply with the reasoning already attached saves the
-time.
+is useful at L0 on day one, because a drafted reply with the reasoning already attached saves time.
 
 ## What is simulated
 
@@ -79,4 +78,4 @@ implements one send method. No pipeline code changes.
 
 **Live demo:** https://maestro-ceo-scheduling.vercel.app
 **Architecture:** https://maestro-ceo-scheduling.vercel.app/static/architecture.svg
-**Repository:** https://github.com/stevencallaway1/clickup-case-study
+**Repository:** https://github.com/stevencallaway1/maestro-ceo-scheduling
