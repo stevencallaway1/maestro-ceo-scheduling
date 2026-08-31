@@ -1,8 +1,13 @@
-"""Shared calendar math for the Prioritization Agent and Calendar Optimizer.
+"""Calendar math shared by the Planner and the Calendar Optimizer.
 
-Pure functions over data/calendar.json: free-slot search under policy
-constraints, protected-block collision checks, and timezone-fair rendering.
-All times use stdlib ``zoneinfo`` - no network, no third-party tz data.
+Deterministic, pure functions over data/calendar.json: free-slot search under
+policy constraints, protected-block collision checks, and timezone-fair
+rendering. All times use stdlib ``zoneinfo`` - no network, no third-party
+timezone data.
+
+``find_slots`` is the reason the Planner can never invent a time: it only ever
+returns slots that are provably free, inside business hours, and compliant
+with every constraint the policy engine attached.
 """
 from __future__ import annotations
 
@@ -13,7 +18,7 @@ from zoneinfo import ZoneInfo
 from .models import Slot
 
 WEEKDAY_ABBR = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-LEAD_TIME_MINUTES = 30  # never offer a slot starting sooner than this
+LEAD_TIME_MINUTES = 60  # never offer a slot starting sooner than this
 CANDIDATE_STEP_MINUTES = 30
 
 
@@ -144,8 +149,8 @@ def find_slots(cal: dict[str, Any], duration_minutes: int, constraints: list[dic
                 candidates.append((_in_prefer_window(cursor, prefer_windows), cursor))
             cursor += timedelta(minutes=CANDIDATE_STEP_MINUTES)
 
-    # Preferred-window slots first, then chronological; one slot per gap start
-    # cluster (avoid offering 15:00 and 15:30 out of the same open block).
+    # Selection prefers the policy's batching windows, then earliest; one slot
+    # per cluster (never offer 15:00 and 15:30 out of the same open block).
     candidates.sort(key=lambda c: (not c[0], c[1]))
     picked: list[datetime] = []
     for _, start in candidates:
@@ -154,6 +159,9 @@ def find_slots(cal: dict[str, Any], duration_minutes: int, constraints: list[dic
         picked.append(start)
         if len(picked) == limit:
             break
+
+    # Presentation is always chronological, whatever order they were picked in.
+    picked.sort()
 
     ceo_tz = cal["timezone"]
     return [

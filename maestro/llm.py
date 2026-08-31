@@ -1,45 +1,56 @@
-"""LLM provider seam.
+"""Model seam. The only place Maestro would call a language model.
 
-The demo runs with ``MockProvider`` - fully deterministic, zero network calls,
-so nothing can fail live. A production deployment swaps in a real provider
-(e.g. the Claude API) behind the same ``LLMProvider`` protocol without touching
-any pipeline code: agents ask the provider to "render" a named artifact from
-structured context, and the mock does it with templates while a real model
-would do it with a prompt.
+Exactly two stages are model-backed - the Planner and the Critic - and each
+makes one call per request. Everything else in the pipeline is deterministic
+code. Both stages talk to this ``ModelProvider`` interface, which returns a
+structured object for a named task, the same shape a real model would return
+under a JSON schema.
+
+The demo ships with ``TemplateProvider``: the identical call sites and the
+identical output contract, rendered from deterministic templates instead of a
+network round trip. That keeps the live demo unfailable and makes the
+production swap a one-line change (register a Claude-backed provider) with no
+edits to pipeline code.
 """
 from __future__ import annotations
 
-from typing import Any, Protocol
+from typing import Any, Callable, Protocol
+
+# The two model-backed tasks. Named here so the cap is visible in one place.
+TASKS = ("plan", "critique")
 
 
-class LLMProvider(Protocol):
-    """Interface every language-model backend must satisfy."""
+class ModelProvider(Protocol):
+    """Interface every model backend must satisfy."""
 
-    def render(self, task: str, context: dict[str, Any]) -> str:
-        """Produce text for a named task (e.g. ``rationale``) from context."""
+    def generate(self, task: str, context: dict[str, Any]) -> dict[str, Any]:
+        """Return a structured object for a named task (``plan``/``critique``)."""
         ...
 
 
-class MockProvider:
-    """Deterministic template-based renderer. The demo default.
+class TemplateProvider:
+    """Deterministic renderer standing in for a model. The demo default.
 
-    ``render`` dispatches to the template registered for the task. Templates
-    receive the full structured context and return plain text, which keeps the
-    output stable across runs - critical for a live screen-share demo.
+    ``generate`` dispatches to the template registered for the task. Templates
+    receive the full structured context and return the same dict shape a real
+    model would produce, which keeps output stable across runs - critical for a
+    live demo, and exactly what the Critic needs to be checkable.
     """
 
     def __init__(self) -> None:
-        self._templates: dict[str, Any] = {}
+        self._templates: dict[str, Callable[[dict[str, Any]], dict[str, Any]]] = {}
 
-    def register(self, task: str, fn: Any) -> None:
-        """Register a callable ``fn(context) -> str`` for a task name."""
+    def register(self, task: str, fn: Callable[[dict[str, Any]], dict[str, Any]]) -> None:
+        """Register a callable ``fn(context) -> dict`` for a task name."""
+        if task not in TASKS:
+            raise ValueError(f"Unknown model task '{task}'. Known tasks: {TASKS}")
         self._templates[task] = fn
 
-    def render(self, task: str, context: dict[str, Any]) -> str:
+    def generate(self, task: str, context: dict[str, Any]) -> dict[str, Any]:
         fn = self._templates.get(task)
         if fn is None:
-            raise KeyError(f"MockProvider has no template for task '{task}'")
+            raise KeyError(f"No template registered for task '{task}'")
         return fn(context)
 
 
-DEFAULT_PROVIDER = MockProvider()
+DEFAULT_PROVIDER = TemplateProvider()

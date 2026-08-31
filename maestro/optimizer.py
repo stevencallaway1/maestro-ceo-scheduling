@@ -1,6 +1,7 @@
-"""Calendar Optimizer: background pass over the week's calendar.
+"""Calendar Optimizer: background pass over the week's calendar. Deterministic.
 
-Produces four kinds of findings, all computed deterministically:
+Runs outside the request path and never acts on its own; its findings surface
+in the Daily Brief for a human to act on. Produces four kinds:
   1. Deep-work blocks at risk (which meetings ate them)
   2. Per-day fragmentation score (sub-30-minute gaps between meetings)
   3. Batching suggestions (scattered external 1:1s -> one open block)

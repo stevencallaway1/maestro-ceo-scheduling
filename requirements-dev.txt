@@ -1,3 +1,4 @@
-# Dev-only tooling - NOT required for `make run` or `make test`.
+# Dev-only tooling. NOT required for `make run` or the deployed demo.
 # After installing, fetch the browser once: python -m playwright install chromium
+pytest>=8.0
 playwright>=1.45

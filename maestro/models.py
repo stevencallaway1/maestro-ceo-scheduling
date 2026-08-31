@@ -3,11 +3,25 @@
 Every stage of the pipeline consumes and produces one of these dataclasses.
 They are all JSON-serializable via ``dataclasses.asdict`` so the UI can render
 each artifact in full - no decision without an inspectable object behind it.
+
+Stage order: RequestObject -> Dossier -> PolicyResult -> Decision + Draft
+(the Planner's plan) -> Critique -> approval -> ExecutionResult.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass, field, asdict
 from typing import Any
+
+# The five outcomes a request can end in, and how they are named everywhere a
+# human reads them. One definition so the UI, the brief, and the approval queue
+# never disagree.
+OUTCOME_LABEL = {
+    "accept": "Scheduled",
+    "decline": "Declined",
+    "delegate": "Delegated",
+    "defer": "Deferred",
+    "escalate_to_human": "Escalated to human",
+}
 
 
 @dataclass
@@ -23,7 +37,7 @@ class Requester:
 
 @dataclass
 class RequestObject:
-    """Structured scheduling request produced by the Intake Agent."""
+    """Structured scheduling request produced by request normalization."""
 
     id: str
     requester: Requester
@@ -113,7 +127,7 @@ class Slot:
 
 @dataclass
 class Decision:
-    """The Prioritization Agent's final call, with written rationale."""
+    """The Planner's call on a request, with its written rationale."""
 
     request_id: str
     outcome: str
@@ -139,6 +153,55 @@ class Draft:
     subject: str
     body: str
     approval_required: bool = True
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass
+class Finding:
+    """One issue the Critic raised against the plan."""
+
+    check: str  # which check produced it, e.g. "slot_integrity"
+    severity: str  # "block" | "revise" | "note"
+    message: str
+
+
+@dataclass
+class Critique:
+    """The Critic's review of the Planner's decision + draft.
+
+    ``verdict`` is the worst severity found: ``pass`` when the plan is clean,
+    ``revise`` when a human should look before it goes out, ``block`` when the
+    plan must not execute as written. Anything other than ``pass`` forces the
+    approval queue regardless of trust level.
+    """
+
+    request_id: str
+    verdict: str  # "pass" | "revise" | "block"
+    findings: list[Finding]
+    checks_run: list[str]
+    summary: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass
+class ExecutionResult:
+    """What the calendar adapter did after a human approved the plan.
+
+    In the demo the adapter is simulated: the payload it would send is built
+    and recorded in full, but no external API is called.
+    """
+
+    approval_id: str
+    request_id: str | None
+    action: str  # "calendar_hold" | "route_only" | "no_action"
+    simulated: bool
+    summary: str
+    event: dict[str, Any] | None = None
+    executed_at: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

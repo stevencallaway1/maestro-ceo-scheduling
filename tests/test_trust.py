@@ -18,7 +18,9 @@ def sandbox_data(tmp_path, monkeypatch):
     dst = tmp_path / "data"
     shutil.copytree(PROJECT_DATA, dst)
     monkeypatch.setattr(store, "DATA_DIR", dst)
-    return dst
+    store._cache.clear()
+    yield dst
+    store._cache.clear()
 
 
 def metrics(samples: int, rate: float, misses: int = 0) -> dict:

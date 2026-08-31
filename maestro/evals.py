@@ -1,4 +1,4 @@
-"""Eval Agent: the trust mechanism's measurement half.
+"""Eval loop: the trust mechanism's measurement half. Deterministic.
 
 Compares Maestro's decisions to recorded human behavior (data/overrides.json)
 and computes the rolling metrics the Trust Ladder promotes and demotes on:

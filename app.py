@@ -1,8 +1,8 @@
 """Maestro demo server.
 
-FastAPI backend + static single-page UI. Run with ``python app.py`` (or
-``make run``) and open http://localhost:8000 - zero config, zero network
-dependencies at runtime.
+FastAPI backend plus a static single-page UI. Run with ``python app.py`` (or
+``make run``) and open http://localhost:8000 - zero config, zero network calls
+at runtime.
 """
 from __future__ import annotations
 
@@ -10,13 +10,12 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
-import uvicorn
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from maestro import audit, brief, evals, optimizer, store, trust
+from maestro import audit, brief, evals, execute, store, trust
 from maestro.pipeline import Pipeline
 
 ROOT = Path(__file__).resolve().parent
@@ -28,6 +27,18 @@ class OverrideBody(BaseModel):
     """One-line human reason for reversing a Maestro decision."""
 
     reason: str
+
+
+@app.get("/api/status")
+def status() -> dict[str, Any]:
+    """What is real and what is simulated in this deployment."""
+    return {
+        "model_calls": "simulated",
+        "calendar_writes": "simulated",
+        "state_persistence": "disk" if store.disk_writable() else "memory",
+        "note": ("Planner and Critic run on deterministic templates behind the model seam; "
+                 "the calendar adapter builds the event payload but makes no external call."),
+    }
 
 
 @app.get("/api/requests")
@@ -51,12 +62,6 @@ def daily_brief() -> dict[str, Any]:
     return brief.generate()
 
 
-@app.get("/api/optimizer")
-def optimizer_findings() -> dict[str, Any]:
-    """Raw optimizer findings for the current calendar."""
-    return optimizer.run(store.load("calendar.json"))
-
-
 @app.get("/api/trust")
 def trust_report() -> dict[str, Any]:
     """Trust ladder state, eval metrics, and promotion progress."""
@@ -70,16 +75,17 @@ def audit_log(limit: int = 200) -> list[dict[str, Any]]:
 
 
 def _find_approval(approval_id: str) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    approvals = store.load("approvals.json")
-    entry = next((a for a in approvals if a["id"] == approval_id), None)
-    if entry is None:
+    """Look up a queued approval, or 404. Rebuilds after a cold start."""
+    if pipeline.find_approval(approval_id) is None:
         raise HTTPException(status_code=404, detail=f"Unknown approval id: {approval_id}")
+    approvals = store.load("approvals.json")
+    entry = next(a for a in approvals if a["id"] == approval_id)
     return approvals, entry
 
 
 def _record_human_action(entry: dict[str, Any], action: str, reason: str | None,
                          critical: bool) -> None:
-    """Append the human's verdict to overrides.json - the eval flywheel."""
+    """Append the human's verdict to overrides.json - the eval loop's input."""
     overrides = store.load("overrides.json")
     overrides.append({
         "id": f"ov-live-{len(overrides) + 1:03d}",
@@ -96,22 +102,25 @@ def _record_human_action(entry: dict[str, Any], action: str, reason: str | None,
 
 @app.post("/api/approvals/{approval_id}/approve")
 def approve(approval_id: str) -> dict[str, Any]:
-    """Human approves a queued draft. Feeds acceptance metrics."""
+    """Human approves a plan. Executes it, then feeds the acceptance metrics."""
     approvals, entry = _find_approval(approval_id)
     entry["status"] = "approved"
-    store.save("approvals.json", approvals)
     _record_human_action(entry, "approved", None, critical=False)
     audit.record("human_review", f"APPROVED: {entry['summary']}", actor="human",
                  request_id=entry.get("request_id"))
-    return {"ok": True, "approval": entry}
+
+    result = execute.execute(entry, pipeline.calendar)
+    entry["execution"] = result.to_dict()
+    store.save("approvals.json", approvals)
+    return {"ok": True, "approval": entry, "execution": result.to_dict()}
 
 
 @app.post("/api/approvals/{approval_id}/override")
 def override(approval_id: str, body: OverrideBody) -> dict[str, Any]:
-    """Human overrides a queued draft with a one-line reason.
+    """Human overrides a plan with a one-line reason. Nothing is executed.
 
-    Writes to overrides.json (eval flywheel) and, if the reversal hits a
-    sensitive category or VIP, triggers an automatic trust-ladder demotion.
+    Writes to overrides.json (the eval loop) and, if the reversal hits a
+    sensitive category or a VIP, triggers an automatic trust-ladder demotion.
     """
     approvals, entry = _find_approval(approval_id)
     entry["status"] = "overridden"
@@ -129,6 +138,14 @@ def override(approval_id: str, body: OverrideBody) -> dict[str, Any]:
     return {"ok": True, "approval": entry, "critical_miss": critical, "demotion": demotion}
 
 
+@app.post("/api/reset")
+def reset_demo() -> dict[str, Any]:
+    """Restore the seeded demo state so the next reviewer starts clean."""
+    files = store.reset()
+    audit.record("reset", "Demo state restored from seed.", actor="human")
+    return {"ok": True, "reset": files}
+
+
 app.mount("/static", StaticFiles(directory=ROOT / "static"), name="static")
 
 
@@ -139,6 +156,8 @@ def index() -> FileResponse:
 
 
 if __name__ == "__main__":
+    import uvicorn
+
     print("\n  Maestro - AI scheduling for the Office of the CEO")
     print("  http://localhost:8000\n")
     uvicorn.run(app, host="127.0.0.1", port=8000, log_level="warning")

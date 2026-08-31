@@ -1,34 +1,24 @@
 """Reset demo state.
 
-Copies the pristine snapshots in data/seed/ back over the five runtime-mutable
-files (approvals, decisions, overrides, trust, audit log) so every rehearsal
-and the live demo start from the same clean state. Hand-edited seed files:
-edit data/seed/* and re-run.
+Restores the pristine snapshots in data/seed/ over the runtime-mutable files so
+every run starts from the same place. Same code path as the Reset demo button
+in the UI (``POST /api/reset``); use this one between local runs, and the
+button while a server is up.
 
 Usage: python scripts/reset_demo.py   (or ``make reset``)
 """
 from __future__ import annotations
 
-import shutil
+import sys
 from pathlib import Path
 
-DATA = Path(__file__).resolve().parent.parent / "data"
-SEED = DATA / "seed"
-RUNTIME_FILES = [
-    "approvals.json",
-    "decisions.json",
-    "overrides.json",
-    "trust.json",
-    "audit_log.jsonl",
-]
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from maestro import store  # noqa: E402
 
 
 def main() -> None:
-    for name in RUNTIME_FILES:
-        src = SEED / name
-        if not src.exists():
-            raise SystemExit(f"Missing seed file: {src}")
-        shutil.copyfile(src, DATA / name)
+    for name in store.reset():
         print(f"  reset {name}")
     print("Demo state restored.")
 

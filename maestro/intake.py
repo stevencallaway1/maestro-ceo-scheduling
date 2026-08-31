@@ -1,8 +1,10 @@
-"""Intake Agent: turn a raw inbound payload (email / Slack / ClickUp task)
-into a structured :class:`~maestro.models.RequestObject`.
+"""Intake: normalize a raw inbound payload (email / Slack / ClickUp task) into
+a structured :class:`~maestro.models.RequestObject`.
 
-Classification is deterministic keyword + signal matching so the demo never
-depends on a network call. The raw source text is always preserved verbatim.
+Deterministic. Classification is keyword and signal matching over the request
+text, with the requester record as a fallback, so the same input always
+produces the same object. The raw source text is preserved verbatim: intake
+narrows what the request looks like, and never decides what happens to it.
 """
 from __future__ import annotations
 
