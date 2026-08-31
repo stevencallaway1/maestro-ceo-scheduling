@@ -121,7 +121,7 @@ class Slot:
 
     start: str  # ISO, CEO timezone
     end: str
-    ceo_local: str  # human string, e.g. "Mon Aug 31, 12:30–1:00 PM PDT"
+    ceo_local: str  # human string, e.g. "Mon Aug 31, 12:30-1:00 PM PDT"
     requester_local: str
 
 
@@ -162,7 +162,7 @@ class Draft:
 class Finding:
     """One issue the Critic raised against the plan."""
 
-    check: str  # which check produced it, e.g. "slot_integrity"
+    check: str  # which check produced it, e.g. "commitment_coverage"
     severity: str  # "block" | "revise" | "note"
     message: str
 

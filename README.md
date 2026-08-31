@@ -48,12 +48,12 @@ human's verdict and adjusts how much autonomy that category gets next time.
 
 This is the load-bearing design decision, so it is worth stating plainly.
 
-**Model-backed — two stages, one call each:**
+**Model-backed. Two stages, one call each:**
 
-- **Planner** (`maestro/planner.py`) — writes the rationale and the draft reply.
-- **Critic** (`maestro/critic.py`) — reviews that work.
+- **Planner** (`maestro/planner.py`) writes the rationale and the draft reply.
+- **Critic** (`maestro/critic.py`) reviews that work.
 
-**Deterministic — everything else:**
+**Deterministic. Everything else:**
 
 request normalization (`intake.py`), context assembly (`context.py`), the policy engine
 (`policy.py`), calendar math and free-slot search (`calendarlib.py`), approval routing
@@ -91,7 +91,7 @@ Slot legality is deliberately *not* a check. Those slots are legal by constructi
 them would be theater. The Critic reviews judgment, not arithmetic.
 
 In the demo, the board member's request trips `commitment_coverage`: the reply never mentions the
-churn cohort analysis promised on June 30 and still not sent. The verdict is the gate on autonomy —
+churn cohort analysis promised on June 30 and still not sent. The verdict is the gate on autonomy:
 as categories climb the ladder, only a clean `pass` is ever eligible to execute unattended.
 
 ## The trust ladder
@@ -112,7 +112,7 @@ permanently and cannot be promoted by any track record.
 ```bash
 make install     # venv + dependencies
 make run         # http://localhost:8000
-make test        # 56 tests
+make test        # 59 tests
 make reset       # restore the seeded demo state
 ```
 
@@ -127,11 +127,12 @@ editable by hand before a run.
 2. Click **Jordan Ellis**, run it. The sensitive-category lockout fires at the policy engine.
    Maestro builds the dossier and stops; no draft, no hold, no model call on the topic.
 3. Click **Grace Okafor**, run it. Accepted with Sydney-fair mornings, and a clean Critic pass.
-4. **Daily Brief** → approve Grace's plan and watch the calendar adapter place the hold. Then
-   **Override** it instead on a rerun: a VIP reversal is a critical miss and demotes external
-   partners L1 → L0 live.
-5. **Trust & Audit** → the demotion is on the ladder, the metrics moved, and the audit log shows
-   every step you just took.
+4. **Daily Brief** → read the brief, then **Approve** Dana's plan. The calendar adapter places the
+   hold and says so.
+5. **Override** Grace's plan instead, with any reason. She is a VIP, so the reversal is a critical
+   miss and demotes external partners L1 → L0 live.
+6. **Trust & Audit** → the demotion is already on the ladder, the metrics moved, and the audit log
+   shows every step you just took, including the calendar write.
 
 **Reset demo** in the header restores the seeded state at any point.
 
@@ -207,5 +208,5 @@ maestro/
   brief.py  optimizer.py  daily brief, background calendar pass
 data/                   all state as hand-editable JSON, plus seed/ snapshots
 static/                 single-page UI, no build step, no dependencies
-tests/                  56 tests: policy, trust, pipeline, critic, execution
+tests/                  59 tests: policy, trust, pipeline, critic, execution
 ```
